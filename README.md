@@ -55,7 +55,7 @@ streamlit run main.py
 
 - XGBoost Accuracy: 78.16%
 - Random Forest Accuracy: 64.47%
-- Logistic Regression Accuracy: [To be added]
+- Logistic Regression Accuracy: 65.86%
 
 ## Contributing
 
@@ -63,14 +63,4 @@ streamlit run main.py
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Premier League data sources
-- XGBoost documentation
-- Streamlit documentation 
+5. Open a Pull Request 
