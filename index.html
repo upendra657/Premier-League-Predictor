@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Premier League Match Predictor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Premier League Predictor</h1>
+    <form id="predict-form">
+      <label for="home-team">Home Team:</label>
+      <input type="text" id="home-team" name="home_team" required />
+
+      <label for="away-team">Away Team:</label>
+      <input type="text" id="away-team" name="away_team" required />
+
+      <label for="year">Match Year:</label>
+      <input type="number" id="year" name="year" min="2000" max="2030" value="2025" required />
+
+      <button type="submit">Predict Outcome</button>
+    </form>
+
+    <div id="result"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
