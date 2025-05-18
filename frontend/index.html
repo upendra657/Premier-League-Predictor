@@ -1,36 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Premier League Predictor</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Premier League Match Predictor</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Premier League Predictor</h1>
-  <form id="predictForm">
-    <label>Home Team: <input type="text" id="homeTeam" required></label><br>
-    <label>Away Team: <input type="text" id="awayTeam" required></label><br>
-    <button type="submit">Predict</button>
-  </form>
+  <div class="container">
+    <h1>Premier League Predictor</h1>
+    <form id="predict-form">
+      <label for="home-team">Home Team:</label>
+      <input type="text" id="home-team" name="home_team" required />
 
-  <div id="result"></div>
+      <label for="away-team">Away Team:</label>
+      <input type="text" id="away-team" name="away_team" required />
 
-  <script>
-    document.getElementById("predictForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const response = await fetch('http://localhost:5000/predict', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          HomeTeam: document.getElementById("homeTeam").value,
-          AwayTeam: document.getElementById("awayTeam").value,
-          Year: 2025,
-          Month: 5,
-          Day: 17
-        })
-      });
-      const data = await response.json();
-      document.getElementById("result").innerText = JSON.stringify(data);
-    });
-  </script>
+      <label for="year">Match Year:</label>
+      <input type="number" id="year" name="year" min="2000" max="2030" value="2025" required />
+
+      <button type="submit">Predict Outcome</button>
+    </form>
+
+    <div id="result"></div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>

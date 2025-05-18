@@ -6,8 +6,10 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
 import os
 from datetime import datetime
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 # Load data and model
 df = pd.read_csv("final_dataset.csv")
@@ -16,11 +18,14 @@ teams = sorted(df['HomeTeam'].unique())
 
 # Load XGBoost model
 model = xgb.XGBClassifier()
-model_path = os.path.join(os.path.dirname(__file__), '..', 'xgboost_model.json')
-model.load_model(model_path)
+model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'xgboost_model.json')
+try:
+    model.load_model(model_path)
+except Exception as e:
+    print(f"Error loading model: {e}")
 
 # Load feature names
-features_path = os.path.join(os.path.dirname(__file__), '..', 'xgboost_features.txt')
+features_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'xgboost_features.txt')
 with open(features_path, "r") as f:
     model_features = [line.strip() for line in f]
 
@@ -52,8 +57,10 @@ label_map = {'H': 'H', 'A': 'NH', 'D': 'NH', 'NH': 'NH'}
 def home():
     return render_template('index.html', teams=teams)
 
-@app.route('/predict', methods=['POST'])
+@app.route('/predict', methods=['POST', 'OPTIONS'])
 def predict():
+    if request.method == 'OPTIONS':
+        return '', 204
     data = request.json
     home_team = data.get('home_team')
     away_team = data.get('away_team')
@@ -169,4 +176,4 @@ def predict():
         return jsonify({"error": str(e)})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5001) 
