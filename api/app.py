@@ -14,6 +14,10 @@ CORS(app)
 # Load data and model
 df = pd.read_csv("final_dataset.csv")
 df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y', errors='coerce')
+# Extract Year, Month, and Day from Date
+df['Year'] = df['Date'].dt.year
+df['Month'] = df['Date'].dt.month
+df['Day'] = df['Date'].dt.day
 teams = sorted(df['HomeTeam'].unique())
 
 # Load XGBoost model
@@ -25,7 +29,7 @@ except Exception as e:
     print(f"Error loading model: {e}")
 
 # Load feature names
-features_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'xgboost_features.txt')
+features_path = os.path.join(os.path.dirname(__file__), 'models', 'xgboost_features.txt')
 with open(features_path, "r") as f:
     model_features = [line.strip() for line in f]
 
