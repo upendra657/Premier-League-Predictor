@@ -67,12 +67,9 @@ importance = pd.DataFrame({
 }).sort_values('Importance', ascending=False)
 
 # Evaluate
-train_acc = accuracy_score(y_train, model.predict(X_train_scaled))
 test_pred = model.predict(X_test_scaled)
-test_acc = accuracy_score(y_test, test_pred)
-
-print(f"\nTrain Accuracy: {train_acc:.4f}")
-print(f"Test Accuracy: {test_acc:.4f}")
+accuracy = accuracy_score(y_test, test_pred)
+print(f"\nAccuracy: {accuracy:.4f}")
 print("\nClassification Report:\n", classification_report(y_test, test_pred))
 
 # Save model
@@ -98,7 +95,7 @@ plt.figure(figsize=(8, 6))
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
             xticklabels=np.unique(y_test),
             yticklabels=np.unique(y_test))
-plt.title(f"Confusion Matrix\nTrain Acc: {train_acc:.2%} | Test Acc: {test_acc:.2%}")
+plt.title(f"Confusion Matrix\nAccuracy: {accuracy:.2%}")
 plt.xlabel("Predicted")
 plt.ylabel("Actual")
 plt.tight_layout()
@@ -112,4 +109,6 @@ plt.title("Top 15 Most Important Features")
 plt.tight_layout()
 plt.savefig("feature_importance.png")
 plt.close()
+
+# Accuracy was calculated using the test set predictions against the actual test set labels.
 

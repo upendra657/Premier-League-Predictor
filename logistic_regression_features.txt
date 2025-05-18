@@ -109,7 +109,6 @@ HomeTeam_Wigan
 HomeTeam_Wolves
 MW
 Month
-Unnamed: 0
 Year
 AwayTeam_Arsenal
 AwayTeam_Aston Villa
