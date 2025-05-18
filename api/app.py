@@ -55,7 +55,7 @@ label_map = {'H': 'H', 'A': 'NH', 'D': 'NH', 'NH': 'NH'}
 
 @app.route('/')
 def home():
-    return render_template('index.html', teams=teams)
+    return jsonify({"status": "healthy", "message": "Premier League Predictor API is running"})
 
 @app.route('/predict', methods=['POST', 'OPTIONS'])
 def predict():
