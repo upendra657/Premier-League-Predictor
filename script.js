@@ -1,12 +1,12 @@
 // script.js
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('predict-form');
-    const resultDiv = document.getElementById('result');
+    const resultContainer = document.getElementById('result');
     const homeTeamSelect = document.getElementById('home-team');
     const awayTeamSelect = document.getElementById('away-team');
 
-    // Prevent selecting same team for home and away
+    // Prevent selecting the same team for home and away
     homeTeamSelect.addEventListener('change', function() {
         if (this.value === awayTeamSelect.value) {
             awayTeamSelect.value = '';
@@ -19,50 +19,70 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    form.addEventListener('submit', async function (e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        // Show loading state
+        resultContainer.innerHTML = '<div class="loading show">Predicting match outcome...</div>';
+        resultContainer.classList.add('show');
 
-        const homeTeam = homeTeamSelect.value;
-        const awayTeam = awayTeamSelect.value;
-        const year = document.getElementById('year').value;
-
-        if (!homeTeam || !awayTeam) {
-            resultDiv.innerHTML = '<p style="color: #ff6b6b;">Please select both home and away teams.</p>';
-            return;
-        }
-
-        if (homeTeam === awayTeam) {
-            resultDiv.innerHTML = '<p style="color: #ff6b6b;">Home and Away teams must be different.</p>';
-            return;
-        }
-
-        resultDiv.innerHTML = '<p>Predicting match outcome...</p>';
+        const formData = {
+            home_team: homeTeamSelect.value,
+            away_team: awayTeamSelect.value,
+            year: document.getElementById('year').value
+        };
 
         try {
-            const response = await fetch('https://premier-league-backend.onrender.com/predict', {
+            const response = await fetch('https://premier-league-predictor-production.up.railway.app/predict', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ home_team: homeTeam, away_team: awayTeam, year: year })
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
             });
 
             const data = await response.json();
-            
-            if (data.error) {
-                resultDiv.innerHTML = `<p style="color: #ff6b6b;">Error: ${data.error}</p>`;
-            } else {
-                const confidence = (data.confidence * 100).toFixed(2);
-                const resultColor = data.predicted_label === 'H' ? '#4CAF50' : '#ff6b6b';
+
+            if (response.ok) {
+                let resultHTML = '';
                 
-                resultDiv.innerHTML = `
-                    <p><strong>Predicted Outcome:</strong> <span style="color: ${resultColor}">${data.predicted_label}</span></p>
-                    <p><strong>Confidence:</strong> ${confidence}%</p>
-                    ${data.actual_result ? `<p><strong>Actual Result:</strong> ${data.actual_result}</p>` : ''}
+                if (data.predicted_label === 'H') {
+                    resultHTML = `
+                        <div class="prediction-result">
+                            <p>Prediction: ${formData.home_team} will win at home</p>
+                            <p class="confidence">Confidence: ${(data.confidence * 100).toFixed(1)}%</p>
+                        </div>
+                    `;
+                } else {
+                    resultHTML = `
+                        <div class="prediction-result">
+                            <p>Prediction: ${formData.away_team} will win away</p>
+                            <p class="confidence">Confidence: ${(data.confidence * 100).toFixed(1)}%</p>
+                        </div>
+                    `;
+                }
+
+                if (data.actual_result) {
+                    resultHTML += `
+                        <div class="actual-result">
+                            <p>Actual Result: ${data.actual_result === 'H' ? formData.home_team + ' won' : formData.away_team + ' won'}</p>
+                        </div>
+                    `;
+                }
+
+                resultContainer.innerHTML = resultHTML;
+            } else {
+                resultContainer.innerHTML = `
+                    <div class="error-message">
+                        Error: ${data.error || 'Failed to get prediction'}
+                    </div>
                 `;
             }
         } catch (error) {
-            resultDiv.innerHTML = `
-                <p style="color: #ff6b6b;">Error: Could not connect to the prediction service.</p>
-                <p style="font-size: 0.9em; color: #ccc;">Please try again later.</p>
+            resultContainer.innerHTML = `
+                <div class="error-message">
+                    Error: Could not connect to the prediction service
+                </div>
             `;
         }
     });
