@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const homeTeamSelect = document.getElementById('home-team');
     const awayTeamSelect = document.getElementById('away-team');
 
+    // API URL - Update this with your actual API URL
+    const API_URL = 'http://localhost:5001';
+
     // Prevent selecting same team for home and away
     homeTeamSelect.addEventListener('change', function() {
         if (this.value === awayTeamSelect.value) {
@@ -39,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
         resultDiv.innerHTML = '<p>Predicting match outcome...</p>';
 
         try {
-            const response = await fetch('https://premier-league-backend.onrender.com/predict', {
+            const response = await fetch(`${API_URL}/predict`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ home_team: homeTeam, away_team: awayTeam, year: year })
