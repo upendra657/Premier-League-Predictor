@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const homeTeamSelect = document.getElementById('home-team');
     const awayTeamSelect = document.getElementById('away-team');
 
-    // API URL - Update this with your actual API URL
-    const API_URL = 'http://localhost:5001';
+    // API URL - This will be replaced with your deployed API URL
+    const API_URL = 'https://your-api-domain.com';  // Replace with your actual deployed API URL
 
     // Prevent selecting same team for home and away
     homeTeamSelect.addEventListener('change', function() {
