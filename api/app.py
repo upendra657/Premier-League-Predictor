@@ -11,35 +11,23 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# Get the base directory
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 # Load data and model
-try:
-    df = pd.read_csv(os.path.join(BASE_DIR, "final_dataset.csv"))
-    df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y', errors='coerce')
-    teams = sorted(df['HomeTeam'].unique())
-except Exception as e:
-    print(f"Error loading dataset: {e}")
-    df = pd.DataFrame()
-    teams = []
+df = pd.read_csv("final_dataset.csv")
+df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y', errors='coerce')
+teams = sorted(df['HomeTeam'].unique())
 
 # Load XGBoost model
 model = xgb.XGBClassifier()
-model_path = os.path.join(BASE_DIR, 'models', 'xgboost_model.json')
+model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'xgboost_model.json')
 try:
     model.load_model(model_path)
 except Exception as e:
     print(f"Error loading model: {e}")
 
 # Load feature names
-features_path = os.path.join(BASE_DIR, 'models', 'xgboost_features.txt')
-try:
-    with open(features_path, "r") as f:
-        model_features = [line.strip() for line in f]
-except Exception as e:
-    print(f"Error loading features: {e}")
-    model_features = []
+features_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'xgboost_features.txt')
+with open(features_path, "r") as f:
+    model_features = [line.strip() for line in f]
 
 # Initialize encoders and scalers
 team_encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
@@ -67,11 +55,7 @@ label_map = {'H': 'H', 'A': 'NH', 'D': 'NH', 'NH': 'NH'}
 
 @app.route('/')
 def home():
-    return jsonify({
-        "status": "healthy", 
-        "message": "Premier League Predictor API is running",
-        "teams": teams
-    })
+    return render_template('index.html', teams=teams)
 
 @app.route('/predict', methods=['POST', 'OPTIONS'])
 def predict():
@@ -192,5 +176,4 @@ def predict():
         return jsonify({"error": str(e)})
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5001))
-    app.run(host='0.0.0.0', port=port, debug=False) 
+    app.run(debug=True, port=5001) 
