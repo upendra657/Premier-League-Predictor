@@ -65,7 +65,7 @@ plt.figure(figsize=(8, 6))
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
             xticklabels=np.unique(y_test),
             yticklabels=np.unique(y_test))
-plt.title(f"Random Forest Confusion Matrix\nTrain Acc: {train_acc:.2%}, Test Acc: {test_acc:.2%}")
+plt.title(f"Random Forest Confusion Matrix\nAccuracy: {test_acc:.2%}")
 plt.xlabel("Predicted")
 plt.ylabel("Actual")
 plt.tight_layout()
