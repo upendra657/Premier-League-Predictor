@@ -32,3 +32,5 @@ venv/lib/python3.9/site-packages/xgboost/
 # Catch-all for any other venv files
 venv/lib/python3.9/site-packages/*
 venv/pyvenv.cfg
+.DS_Store
+.venv/
