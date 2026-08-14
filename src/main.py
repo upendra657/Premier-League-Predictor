@@ -27,12 +27,74 @@ from pydantic import BaseModel, Field, computed_field
 
 from src import config
 from src.backtest import kelly_fraction
-from src.features import MODEL_FEATURES
+from src.features import MODEL_FEATURES, build_team_snapshot
 
 logger = logging.getLogger(__name__)
 
 #: Populated at startup; kept module-level so handlers stay dependency-free.
-STATE: dict[str, Any] = {"model": None, "metadata": None, "features": None}
+STATE: dict[str, Any] = {
+    "model": None,
+    "metadata": None,
+    "features": None,
+    "teams": {},
+}
+
+#: Fallback when a team has no history and the caller supplied nothing.
+LEAGUE_AVERAGE = {
+    "elo": 1500.0,
+    "xg_roll": 1.35,
+    "xga_roll": 1.35,
+    "points_roll": 1.35,
+}
+
+
+def build_feature_frame(
+    values: dict[str, float], rest_home: int, rest_away: int, matchweek: int
+) -> pd.DataFrame:
+    """Derive the full feature vector from resolved per-team ratings."""
+    elo_diff = values["elo_home"] - values["elo_away"]
+    home_advantage = config.FEATURE_CONFIG.elo.home_advantage
+    scale = config.FEATURE_CONFIG.elo.scale
+
+    row = {
+        "elo_home": values["elo_home"],
+        "elo_away": values["elo_away"],
+        "elo_diff": elo_diff,
+        "elo_win_expectancy": 1.0 / (1.0 + 10.0 ** (-(elo_diff + home_advantage) / scale)),
+        "xg_home_roll": values["xg_home_roll"],
+        "xg_away_roll": values["xg_away_roll"],
+        "xga_home_roll": values["xga_home_roll"],
+        "xga_away_roll": values["xga_away_roll"],
+        "xg_diff_home": values["xg_home_roll"] - values["xga_home_roll"],
+        "xg_diff_away": values["xg_away_roll"] - values["xga_away_roll"],
+        "xg_matchup_edge": (values["xg_home_roll"] + values["xga_away_roll"])
+        - (values["xg_away_roll"] + values["xga_home_roll"]),
+        "points_home_roll": values["points_home_roll"],
+        "points_away_roll": values["points_away_roll"],
+        "form_diff": values["points_home_roll"] - values["points_away_roll"],
+        "rest_days_home": rest_home,
+        "rest_days_away": rest_away,
+        "rest_diff": rest_home - rest_away,
+        "matchweek": matchweek,
+    }
+    return pd.DataFrame([row])[list(MODEL_FEATURES)]
+
+
+def resolve_team(name: str) -> dict[str, Any]:
+    """Look up a team's current state, or 404 with the names that do exist."""
+    teams = STATE["teams"]
+    if not teams:
+        return {**LEAGUE_AVERAGE, "as_of": None}
+    if name not in teams:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "message": f"Unknown team {name!r}.",
+                "hint": "Team names follow football-data.co.uk conventions.",
+                "known_teams": sorted(teams),
+            },
+        )
+    return teams[name]
 
 
 @asynccontextmanager
@@ -50,6 +112,23 @@ async def lifespan(app: FastAPI):
 
     if config.METADATA_FILE.exists():
         STATE["metadata"] = json.loads(config.METADATA_FILE.read_text())
+
+    # Prefer the shipped snapshot: the inference image carries artifacts/ but
+    # not data/, so reading the feature store here would work in development
+    # and silently degrade to league averages inside the container.
+    if config.TEAM_SNAPSHOT_FILE.exists():
+        STATE["teams"] = json.loads(config.TEAM_SNAPSHOT_FILE.read_text())
+        logger.info("Loaded current form for %d teams (artifact).", len(STATE["teams"]))
+    elif config.FEATURE_STORE_FILE.exists():
+        STATE["teams"] = build_team_snapshot(pd.read_parquet(config.FEATURE_STORE_FILE))
+        logger.info("Loaded current form for %d teams (feature store).", len(STATE["teams"]))
+    else:
+        logger.warning(
+            "No team snapshot at %s and no feature store at %s; predictions "
+            "fall back to league averages unless the caller supplies ratings.",
+            config.TEAM_SNAPSHOT_FILE,
+            config.FEATURE_STORE_FILE,
+        )
 
     yield
     STATE.clear()
@@ -82,49 +161,65 @@ class FixtureFeatures(BaseModel):
     home_team: str = Field(..., examples=["Arsenal"])
     away_team: str = Field(..., examples=["Chelsea"])
 
-    elo_home: float = Field(1500.0, ge=1000.0, le=2200.0)
-    elo_away: float = Field(1500.0, ge=1000.0, le=2200.0)
+    # Every rating below is optional. Left unset, it is looked up from the
+    # team's most recent fixture in the feature store; set, it overrides that
+    # lookup, which is what makes "what if Arsenal were rated 1700" answerable.
+    elo_home: float | None = Field(None, ge=1000.0, le=2200.0)
+    elo_away: float | None = Field(None, ge=1000.0, le=2200.0)
 
-    xg_home_roll: float = Field(1.35, ge=0.0, le=6.0, description="Decayed rolling xG.")
-    xg_away_roll: float = Field(1.35, ge=0.0, le=6.0)
-    xga_home_roll: float = Field(1.35, ge=0.0, le=6.0, description="Decayed rolling xG against.")
-    xga_away_roll: float = Field(1.35, ge=0.0, le=6.0)
+    xg_home_roll: float | None = Field(None, ge=0.0, le=6.0, description="Decayed rolling xG.")
+    xg_away_roll: float | None = Field(None, ge=0.0, le=6.0)
+    xga_home_roll: float | None = Field(
+        None, ge=0.0, le=6.0, description="Decayed rolling xG against."
+    )
+    xga_away_roll: float | None = Field(None, ge=0.0, le=6.0)
 
-    points_home_roll: float = Field(1.35, ge=0.0, le=3.0)
-    points_away_roll: float = Field(1.35, ge=0.0, le=3.0)
+    points_home_roll: float | None = Field(None, ge=0.0, le=3.0)
+    points_away_roll: float | None = Field(None, ge=0.0, le=3.0)
 
     rest_days_home: int = Field(7, ge=0, le=14)
     rest_days_away: int = Field(7, ge=0, le=14)
     matchweek: int = Field(19, ge=1, le=38)
 
+    def resolve(self) -> tuple[dict[str, float], dict[str, Any]]:
+        """Merge caller-supplied ratings over each team's stored current form.
+
+        Returns the resolved values and a provenance record naming, per side,
+        whether the numbers came from the request or from the feature store.
+        """
+        home_state = resolve_team(self.home_team)
+        away_state = resolve_team(self.away_team)
+
+        supplied = self.model_dump(exclude_none=True)
+        resolved = {
+            "elo_home": self.elo_home if self.elo_home is not None else home_state["elo"],
+            "elo_away": self.elo_away if self.elo_away is not None else away_state["elo"],
+            "xg_home_roll": self.xg_home_roll
+            if self.xg_home_roll is not None else home_state["xg_roll"],
+            "xg_away_roll": self.xg_away_roll
+            if self.xg_away_roll is not None else away_state["xg_roll"],
+            "xga_home_roll": self.xga_home_roll
+            if self.xga_home_roll is not None else home_state["xga_roll"],
+            "xga_away_roll": self.xga_away_roll
+            if self.xga_away_roll is not None else away_state["xga_roll"],
+            "points_home_roll": self.points_home_roll
+            if self.points_home_roll is not None else home_state["points_roll"],
+            "points_away_roll": self.points_away_roll
+            if self.points_away_roll is not None else away_state["points_roll"],
+        }
+        overridden = sorted(k for k in resolved if k in supplied)
+        provenance = {
+            "home_form_as_of": home_state.get("as_of"),
+            "away_form_as_of": away_state.get("as_of"),
+            "overridden_fields": overridden,
+        }
+        return resolved, provenance
+
     def to_frame(self) -> pd.DataFrame:
         """Assemble the exact feature vector the trained model expects."""
-        elo_diff = self.elo_home - self.elo_away
-        home_advantage = config.FEATURE_CONFIG.elo.home_advantage
-        scale = config.FEATURE_CONFIG.elo.scale
-
-        row = {
-            "elo_home": self.elo_home,
-            "elo_away": self.elo_away,
-            "elo_diff": elo_diff,
-            "elo_win_expectancy": 1.0 / (1.0 + 10.0 ** (-(elo_diff + home_advantage) / scale)),
-            "xg_home_roll": self.xg_home_roll,
-            "xg_away_roll": self.xg_away_roll,
-            "xga_home_roll": self.xga_home_roll,
-            "xga_away_roll": self.xga_away_roll,
-            "xg_diff_home": self.xg_home_roll - self.xga_home_roll,
-            "xg_diff_away": self.xg_away_roll - self.xga_away_roll,
-            "xg_matchup_edge": (self.xg_home_roll + self.xga_away_roll)
-            - (self.xg_away_roll + self.xga_home_roll),
-            "points_home_roll": self.points_home_roll,
-            "points_away_roll": self.points_away_roll,
-            "form_diff": self.points_home_roll - self.points_away_roll,
-            "rest_days_home": self.rest_days_home,
-            "rest_days_away": self.rest_days_away,
-            "rest_diff": self.rest_days_home - self.rest_days_away,
-            "matchweek": self.matchweek,
-        }
-        return pd.DataFrame([row])[list(MODEL_FEATURES)]
+        values, _ = self.resolve()
+        return build_feature_frame(values, self.rest_days_home,
+                                   self.rest_days_away, self.matchweek)
 
 
 class MarketOdds(BaseModel):
@@ -150,6 +245,13 @@ class PredictionResponse(BaseModel):
     prob_home_win: float
     prob_draw: float
     prob_away_win: float
+    form_as_of: dict[str, Any] | None = Field(
+        None,
+        description=(
+            "Which fixture each side's ratings were taken from, and any fields "
+            "the request overrode."
+        ),
+    )
 
     @computed_field  # type: ignore[misc]
     @property
@@ -208,6 +310,36 @@ def _predict_probabilities(fixture: FixtureFeatures) -> np.ndarray:
     return raw[:, order].ravel()
 
 
+def round_to_unit(probabilities: np.ndarray, places: int = 4) -> list[float]:
+    """Round a probability vector so the values sum to one at ``places``.
+
+    Rounding each element independently lets the total drift off 1.0 -- three
+    values ending in ...5 all round down and the vector sums to 0.9999. A
+    client computing one outcome as ``1 - other - other`` then disagrees with
+    the value served. The largest-remainder method assigns the leftover unit to
+    whichever element was rounded down hardest, so no unit goes missing.
+
+    The guarantee is exact in decimal, not in binary: the integer counts of
+    ``10**-places`` units sum to exactly ``10**places``. Summing the returned
+    floats can still land a few ulps off 1.0, because values like 0.3333 have
+    no exact binary representation -- assert ``round(sum(...), places) == 1.0``
+    rather than ``sum(...) == 1.0``.
+    """
+    scale = 10**places
+    # float64 throughout: XGBoost hands back float32, and doing the arithmetic
+    # at that precision leaves the total off by ~1e-8 even after correction.
+    scaled = np.asarray(probabilities, dtype=np.float64) * scale
+    floors = np.floor(scaled)
+    shortfall = int(round(scale - floors.sum()))
+
+    if shortfall > 0:
+        # Hand the spare units to the largest fractional parts, biggest first.
+        for index in np.argsort(-(scaled - floors))[:shortfall]:
+            floors[index] += 1
+
+    return [int(value) / scale for value in floors]
+
+
 @app.get("/health", tags=["ops"])
 def health() -> dict[str, Any]:
     """Liveness probe reporting whether the service can actually serve."""
@@ -232,12 +364,15 @@ def model_card() -> dict[str, Any]:
 def predict(fixture: FixtureFeatures) -> PredictionResponse:
     """Return calibrated Home/Draw/Away probabilities for a fixture."""
     probabilities = _predict_probabilities(fixture)
+    _, provenance = fixture.resolve()
+    home, draw, away = round_to_unit(probabilities)
     return PredictionResponse(
         home_team=fixture.home_team,
         away_team=fixture.away_team,
-        prob_home_win=round(float(probabilities[0]), 4),
-        prob_draw=round(float(probabilities[1]), 4),
-        prob_away_win=round(float(probabilities[2]), 4),
+        prob_home_win=home,
+        prob_draw=draw,
+        prob_away_win=away,
+        form_as_of=provenance,
     )
 
 
@@ -280,12 +415,15 @@ def value(request: ValueRequest) -> ValueResponse:
             )
         )
 
+    _, provenance = request.fixture.resolve()
+    home, draw, away = round_to_unit(probabilities)
     prediction = PredictionResponse(
         home_team=request.fixture.home_team,
         away_team=request.fixture.away_team,
-        prob_home_win=round(float(probabilities[0]), 4),
-        prob_draw=round(float(probabilities[1]), 4),
-        prob_away_win=round(float(probabilities[2]), 4),
+        prob_home_win=home,
+        prob_draw=draw,
+        prob_away_win=away,
+        form_as_of=provenance,
     )
     return ValueResponse(
         prediction=prediction,

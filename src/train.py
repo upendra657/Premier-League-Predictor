@@ -28,7 +28,7 @@ from xgboost import XGBClassifier
 
 from src import config
 from src.config import TrainConfig
-from src.features import MODEL_FEATURES
+from src.features import MODEL_FEATURES, build_team_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -309,6 +309,15 @@ def persist_artifacts(
         "walk_forward_metrics": metrics.to_dict(orient="records"),
     }
     config.METADATA_FILE.write_text(json.dumps(metadata, indent=2))
+
+    # Ship each team's latest form alongside the model. The inference image
+    # copies artifacts/ but not data/, so without this the served API would
+    # score every fixture at league average and quietly ignore team identity.
+    if config.FEATURE_STORE_FILE.exists():
+        snapshot = build_team_snapshot(pd.read_parquet(config.FEATURE_STORE_FILE))
+        config.TEAM_SNAPSHOT_FILE.write_text(json.dumps(snapshot, indent=2, sort_keys=True))
+        logger.info("Team snapshot written for %d teams.", len(snapshot))
+
     logger.info("Artifacts written to %s.", config.ARTIFACT_DIR)
 
 

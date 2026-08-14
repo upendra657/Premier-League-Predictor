@@ -30,6 +30,9 @@ FEATURE_STORE_FILE: Path = PROCESSED_DIR / "feature_store.parquet"
 MODEL_FILE: Path = ARTIFACT_DIR / "calibrated_model.joblib"
 METADATA_FILE: Path = ARTIFACT_DIR / "model_metadata.json"
 XG_MODEL_FILE: Path = ARTIFACT_DIR / "shot_quality_model.joblib"
+#: Per-team current form, shipped with the model so the inference image
+#: does not need the feature store (which is data, not an artifact).
+TEAM_SNAPSHOT_FILE: Path = ARTIFACT_DIR / "team_snapshot.json"
 
 # --------------------------------------------------------------------------- #
 # Data sources

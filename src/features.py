@@ -22,6 +22,7 @@ from model training and evaluation.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -451,3 +452,48 @@ if __name__ == "__main__":  # pragma: no cover
     features, _ = build_features(build_dataset())
     features.to_parquet(config.FEATURE_STORE_FILE, index=False)
     print(features.loc[features["is_modellable"], list(MODEL_FEATURES)].describe().T)
+
+
+def build_team_snapshot(features: pd.DataFrame) -> dict[str, dict[str, Any]]:
+    """Reduce the fixture-level feature store to one current state per team.
+
+    Each fixture carries pre-match ratings for both sides, so a team's most
+    recent appearance -- home or away -- holds the freshest view of its form.
+    Reshaping to team perspective and taking the last row per team gives the
+    state needed to score a hypothetical fixture.
+
+    Values are pre-match as of that fixture, so they are one match stale.
+    ``as_of`` travels with them so a caller can judge how current they are.
+    """
+    home = features[[
+        "MatchDate", "HomeTeam", "elo_home", "xg_home_roll",
+        "xga_home_roll", "points_home_roll",
+    ]].rename(columns={
+        "HomeTeam": "team", "elo_home": "elo", "xg_home_roll": "xg_roll",
+        "xga_home_roll": "xga_roll", "points_home_roll": "points_roll",
+    })
+    away = features[[
+        "MatchDate", "AwayTeam", "elo_away", "xg_away_roll",
+        "xga_away_roll", "points_away_roll",
+    ]].rename(columns={
+        "AwayTeam": "team", "elo_away": "elo", "xg_away_roll": "xg_roll",
+        "xga_away_roll": "xga_roll", "points_away_roll": "points_roll",
+    })
+
+    combined = (
+        pd.concat([home, away], ignore_index=True)
+        .dropna(subset=["team"])
+        .sort_values("MatchDate")
+    )
+    latest = combined.groupby("team", as_index=True).last()
+
+    return {
+        str(team): {
+            "elo": float(row["elo"]),
+            "xg_roll": float(row["xg_roll"]),
+            "xga_roll": float(row["xga_roll"]),
+            "points_roll": float(row["points_roll"]),
+            "as_of": row["MatchDate"].date().isoformat(),
+        }
+        for team, row in latest.iterrows()
+    }

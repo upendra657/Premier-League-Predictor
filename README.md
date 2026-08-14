@@ -172,21 +172,43 @@ uvicorn src.main:app --reload
 | `POST /predict` | Calibrated Home / Draw / Away probabilities |
 | `POST /value` | Probabilities + edge + Kelly stake against supplied odds |
 
+Team names are enough — each side's Elo, decayed rolling xG/xGA and form are
+looked up from ratings shipped alongside the model:
+
+```bash
+curl -X POST localhost:8000/predict -H 'Content-Type: application/json' \
+  -d '{"home_team":"Liverpool","away_team":"Burnley"}'
+```
+
+```json
+{"home_team":"Liverpool","away_team":"Burnley",
+ "prob_home_win":0.8496,"prob_draw":0.1036,"prob_away_win":0.0468,
+ "form_as_of":{"home_form_as_of":"2025-05-04","away_form_as_of":"2024-05-19",
+               "overridden_fields":[]},
+ "most_likely":"home_win"}
+```
+
+`form_as_of` names the fixture each side's ratings came from. Burnley's are
+older because they were relegated in 2024 — the response surfaces that rather
+than passing a stale rating off as current. An unknown team returns `404` with
+the list of valid names, so a typo cannot silently become a league-average
+prediction.
+
+Any rating can be supplied explicitly to override the lookup, which is what
+makes counterfactuals answerable:
+
 ```bash
 curl -X POST localhost:8000/value -H 'Content-Type: application/json' -d '{
   "fixture": {"home_team":"Arsenal","away_team":"Chelsea",
-              "elo_home":1650,"elo_away":1580,
-              "xg_home_roll":1.9,"xga_home_roll":0.9,
-              "xg_away_roll":1.4,"xga_away_roll":1.2,
-              "points_home_roll":2.2,"points_away_roll":1.5,
-              "rest_days_home":7,"rest_days_away":3,"matchweek":12},
+              "elo_home":1650, "rest_days_away":3, "matchweek":12},
   "odds": {"home":2.10,"draw":3.60,"away":3.40}
 }'
 ```
 
 Returns per-selection edge, expected value, Kelly stake fraction and a
 `recommended` flag — selections outside the profitable band are returned with a
-zero stake rather than silently dropped.
+zero stake rather than silently dropped. Probabilities are rounded by largest
+remainder, so they sum to exactly 1 at four decimal places.
 
 ### Container
 
