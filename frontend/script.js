@@ -54,10 +54,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 resultDiv.innerHTML = `<p style="color: #ff6b6b;">Error: ${data.error}</p>`;
             } else {
                 const confidence = (data.confidence * 100).toFixed(2);
-                const resultColor = data.predicted_label === 'H' ? '#4CAF50' : '#ff6b6b';
+                const resultColor = data.predicted_winner === homeTeam ? '#4CAF50' : '#ff6b6b';
                 
                 resultDiv.innerHTML = `
-                    <p><strong>Predicted Outcome:</strong> <span style="color: ${resultColor}">${data.predicted_label}</span></p>
+                    <p><strong>Predicted Winner:</strong> <span style="color: ${resultColor}">${data.predicted_winner}</span></p>
                     <p><strong>Confidence:</strong> ${confidence}%</p>
                     ${data.actual_result ? `<p><strong>Actual Result:</strong> ${data.actual_result}</p>` : ''}
                 `;
