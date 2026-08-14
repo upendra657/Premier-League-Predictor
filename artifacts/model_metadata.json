@@ -1,0 +1,85 @@
+{
+  "estimator": "xgboost",
+  "calibration": "native (mlogloss objective)",
+  "features": [
+    "elo_home",
+    "elo_away",
+    "elo_diff",
+    "elo_win_expectancy",
+    "xg_home_roll",
+    "xg_away_roll",
+    "xga_home_roll",
+    "xga_away_roll",
+    "xg_diff_home",
+    "xg_diff_away",
+    "xg_matchup_edge",
+    "points_home_roll",
+    "points_away_roll",
+    "form_diff",
+    "rest_days_home",
+    "rest_days_away",
+    "rest_diff",
+    "matchweek"
+  ],
+  "classes": [
+    "H",
+    "D",
+    "A"
+  ],
+  "walk_forward_metrics": [
+    {
+      "model": "market_baseline",
+      "n": 4509,
+      "brier": 0.56335,
+      "log_loss": 0.95267,
+      "rps": 0.19412,
+      "ece": 0.01045,
+      "accuracy": 0.55689
+    },
+    {
+      "model": "rf_isotonic",
+      "n": 4509,
+      "brier": 0.57616,
+      "log_loss": 0.98085,
+      "rps": 0.19959,
+      "ece": 0.00926,
+      "accuracy": 0.54336
+    },
+    {
+      "model": "xgb_uncalibrated",
+      "n": 4509,
+      "brier": 0.57923,
+      "log_loss": 0.9789,
+      "rps": 0.20055,
+      "ece": 0.01714,
+      "accuracy": 0.5387
+    },
+    {
+      "model": "xgb_isotonic",
+      "n": 4509,
+      "brier": 0.58082,
+      "log_loss": 0.97966,
+      "rps": 0.20135,
+      "ece": 0.01717,
+      "accuracy": 0.53804
+    },
+    {
+      "model": "xgb_sigmoid",
+      "n": 4509,
+      "brier": 0.58163,
+      "log_loss": 0.97909,
+      "rps": 0.20206,
+      "ece": 0.01708,
+      "accuracy": 0.54003
+    },
+    {
+      "model": "rf_uncalibrated",
+      "n": 4509,
+      "brier": 0.59017,
+      "log_loss": 0.99294,
+      "rps": 0.20331,
+      "ece": 0.02118,
+      "accuracy": 0.51453
+    }
+  ]
+}
