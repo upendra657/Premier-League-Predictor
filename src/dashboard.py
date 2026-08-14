@@ -144,7 +144,7 @@ def build(results: dict) -> str:
             _tile(f"{data['fixtures']:,}", "fixtures modelled", f"{data['seasons']} seasons · {data['odds_coverage'] * 100:.1f}% odds coverage"),
             _tile(f"{rf['ece_delta_pct']:.0f}%", "calibration error", "Random Forest ECE 0.0212 → 0.0093", "pos"),
             _tile(f"+{full['flat_stake_roi'] * 100:.1f}%", "ROI, 12 seasons", f"95% CI +{full['roi_ci_low'] * 100:.1f}% to +{full['roi_ci_high'] * 100:.1f}% · p={full['p_roi_not_positive']:.3f}", "pos"),
-            _tile("5.31% → 0.35%", "overround, shopped", "execution beats every modelling gain"),
+            _tile("4.49% → 0.35%", "overround, shopped", "same 7,570 fixtures · beats every modelling gain"),
         ]
     )
 
@@ -272,8 +272,8 @@ unstable edge in a near-efficient market. Quote the strong number, keep this cav
 
 <h2>4 · What is in the repo</h2>
 <ul>
-<li><strong>src/</strong> — 9 modules: config, data, features, train, backtest, report, plots, dashboard, main</li>
-<li><strong>tests/</strong> — 29 tests; 9 exist solely to prove no post-match information reaches a pre-match feature</li>
+<li><strong>src/</strong> — 11 modules: config, data, features, train, backtest, report, plots, dashboard, workbook, main, plus tests</li>
+<li><strong>tests/</strong> — 42 tests; 9 exist solely to prove no post-match information reaches a pre-match feature</li>
 <li><strong>docs/RESUME_BULLETS.md</strong> — four metric-driven bullets plus six interview answers</li>
 <li><strong>docs/IMPLEMENTATION_PLAN.md</strong> — the phase-by-phase build, with exit criteria</li>
 <li><strong>reports/</strong> — results.json, model_metrics.csv, equity_by_season.csv, edge_profile.csv, results.png</li>

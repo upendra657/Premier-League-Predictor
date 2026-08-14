@@ -54,7 +54,8 @@ than assumes.
 Read those three rows together, because they tell one story:
 
 1. **Execution is roughly half the edge.** A single bookmaker's line carries a
-   **5.31% overround**; taking the best price across books cuts it to **0.35%**.
+   **4.49% overround**; taking the best price across books cuts it to **0.35%**
+   (mean over the 7,570 fixtures where both prices exist).
    That 5-point swing is larger than any modelling gain in this project.
 2. **The full-period edge is statistically real** (season-clustered bootstrap,
    p = 0.007) but rests on a selection band chosen with hindsight over the
@@ -98,7 +99,7 @@ src/
 ├── report.py      Consolidated results bundle
 ├── plots.py       Result figures
 └── main.py        FastAPI inference service
-tests/             24 tests, weighted toward leakage and staking correctness
+tests/             42 tests, weighted toward leakage and staking correctness
 Dockerfile         Multi-stage build, non-root runtime, healthcheck
 ```
 
@@ -140,7 +141,7 @@ Every feature is computed strictly from information available before kick-off:
 - Calibration folds are chronological (`TimeSeriesSplit`), so the calibrator is
   never fitted on data postdating its validation slice.
 
-Nine of the 24 tests exist purely to enforce these properties.
+Nine of the 42 tests exist purely to enforce these properties.
 
 ---
 
@@ -156,7 +157,7 @@ python -m src.backtest    # strategy calibration + held-out performance
 python -m src.report      # consolidated results bundle
 python -m src.plots       # figures
 
-pytest -q                 # 24 tests
+pytest -q                 # 42 tests
 ```
 
 ### Serving

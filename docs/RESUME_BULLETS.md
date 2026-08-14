@@ -9,13 +9,13 @@ or borrowed from a different experiment.
 
 > **Premier League Decision Engine** — Python, XGBoost, scikit-learn, FastAPI, Docker
 
-- **Engineered a point-in-time feature pipeline over 9,380 Premier League fixtures (25 seasons)** — dynamic Elo with goal-difference-scaled K-factor, a Poisson shot-quality model producing expected-goals estimates, and exponentially time-decayed 5-match rolling form — enforcing zero temporal leakage through a 24-test suite, 9 tests of which exist solely to verify no post-match information reaches any pre-match feature.
+- **Engineered a point-in-time feature pipeline over 9,380 Premier League fixtures (25 seasons)** — dynamic Elo with goal-difference-scaled K-factor, a Poisson shot-quality model producing expected-goals estimates, and exponentially time-decayed 5-match rolling form — enforcing zero temporal leakage through a 42-test suite, 9 tests of which exist solely to verify no post-match information reaches any pre-match feature.
 
 - **Cut probability miscalibration by 56% (expected calibration error 0.0212 → 0.0093) and Brier score by 2.4%** by applying isotonic `CalibratedClassifierCV` over chronological folds, evaluating on Brier score, log loss and Ranked Probability Score rather than accuracy; benchmarking against the de-vigged bookmaker line showed the calibrated model **better calibrated than the market itself** (ECE 0.0093 vs 0.0105) despite the market's superior discrimination.
 
 - **Built a vectorized backtesting engine simulating 13,527 candidate positions across 12 walk-forward held-out seasons**, isolating positive-EV opportunities where model probability exceeded de-vigged market probability; a fractional-Kelly strategy with per-bet and daily exposure caps returned **+7.2% ROI on turnover (95% bootstrap CI +1.3% to +13.4%, p = 0.007), growing a £1,000 bankroll to £7,328** at a −47% maximum drawdown.
 
-- **Quantified execution cost as the single largest driver of profitability** — demonstrating that single-bookmaker pricing carries a 5.31% overround versus 0.35% when line-shopping, a 5-point swing exceeding every modelling gain in the project — and shipped the model as a containerized FastAPI service (`/predict`, `/value`, `/health`) with multi-stage Docker build, non-root runtime and healthcheck.
+- **Quantified execution cost as the single largest driver of profitability** — demonstrating that single-bookmaker pricing carries a 4.49% overround versus 0.35% when line-shopping across the same 7,570 fixtures, a 4-point swing exceeding every modelling gain in the project — and shipped the model as a containerized FastAPI service (`/predict`, `/value`, `/health`) with multi-stage Docker build, non-root runtime and healthcheck.
 
 ---
 
@@ -24,14 +24,14 @@ or borrowed from a different experiment.
 | Claim | Source |
 |---|---|
 | 9,380 fixtures, 25 seasons | `reports/results.json → dataset` |
-| 24 tests / 9 leakage tests | `pytest -q`; `tests/test_pipeline.py` |
+| 42 tests / 9 leakage tests | `pytest -q`; `tests/test_pipeline.py` |
 | ECE 0.0212 → 0.0093 (−56.3%) | `reports/results.json → calibration_gain` (Random Forest) |
 | Brier 0.5902 → 0.5762 (−2.4%) | same |
 | Model ECE 0.0093 vs market 0.0105 | `reports/model_metrics.csv` |
 | 13,527 candidate positions | `build_candidates` over 4,509 fixtures × 3 outcomes |
 | +7.2% ROI, CI, p-value, £7,328 | `reports/results.json → backtest.full_period` |
 | −47% max drawdown | same |
-| 5.31% vs 0.35% overround | `market_overround`, `odds` vs `best_odds` |
+| 4.49% vs 0.35% overround | mean 1/odds sum − 1, `odds` vs `best_odds`, paired subset (n=7,570) |
 
 ---
 
@@ -107,7 +107,7 @@ significance far faster than ROI does.
 
 **If the role is more ML engineering than analytics**, swap bullet 4 for:
 
-- **Shipped the full pipeline as production infrastructure** — typed dataclass configuration, validated data-contract assertions that fail loudly on upstream schema drift (odds-coverage floor, one-to-one join validation), a 24-test suite covering temporal leakage and staking correctness, and a multi-stage Docker image carrying inference dependencies only, served via FastAPI with Pydantic bounds-checked schemas and a readiness-aware healthcheck.
+- **Shipped the full pipeline as production infrastructure** — typed dataclass configuration, validated data-contract assertions that fail loudly on upstream schema drift (odds-coverage floor, one-to-one join validation), a 42-test suite covering temporal leakage, staking correctness and API contract, and a multi-stage Docker image carrying inference dependencies only, served via FastAPI with Pydantic bounds-checked schemas and a readiness-aware healthcheck.
 
 **If you need a one-line project summary:**
 

@@ -18,3 +18,13 @@ htmlcov/
 .DS_Store
 .idea/
 .vscode/
+/Final Presentation.pptx
+/feature_importance.png
+/logistic_regression.py
+/logistic_regression_confusion_matrix.png
+/logistic_regression_features.txt
+/main.py
+/models/xgboost_features.txt
+/random_forest.py
+/random_forest_confusion_matrix.png
+/scripts/cleanup_and_publish.sh
