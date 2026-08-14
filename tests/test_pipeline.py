@@ -20,7 +20,12 @@ from src.backtest import (
     select_bets,
     simulate_kelly,
 )
-from src.data import add_market_probabilities, normalise_team
+from src.data import (
+    add_market_probabilities,
+    normalise_team,
+    parse_match_dates,
+    validate_dates_against_seasons,
+)
 from src.features import (
     compute_elo_ratings,
     decayed_rolling_mean,
@@ -81,6 +86,49 @@ def test_team_normalisation_unifies_aliases():
     names = pd.Series(["Nottm Forest", "Man Utd", "Arsenal ", "Spurs"])
     normalised = normalise_team(names).tolist()
     assert normalised == ["Nott'm Forest", "Man United", "Arsenal", "Tottenham"]
+
+
+def test_iso_dates_parse_unchanged():
+    parsed = parse_match_dates(pd.Series(["2000-08-19", "2025-05-05"]))
+    assert parsed.iloc[0] == pd.Timestamp("2000-08-19")
+    assert parsed.iloc[1] == pd.Timestamp("2025-05-05")
+
+
+def test_excel_mangled_dates_parse_month_first():
+    """Excel rewrites ISO dates as M/D/YY; the loader must recover them."""
+    parsed = parse_match_dates(pd.Series(["8/19/00", "5/5/25"]))
+    assert parsed.iloc[0] == pd.Timestamp("2000-08-19")
+    assert parsed.iloc[1] == pd.Timestamp("2025-05-05")
+
+
+def test_unparseable_dates_raise():
+    with pytest.raises(ValueError, match="unparseable"):
+        parse_match_dates(pd.Series(["2000-08-19", "not a date"]))
+
+
+def test_season_window_check_passes_for_correct_dates():
+    frame = pd.DataFrame(
+        {
+            "Season": ["2019/20", "2019/20"],
+            "MatchDate": pd.to_datetime(["2019-08-10", "2020-07-26"]),
+        }
+    )
+    validate_dates_against_seasons(frame)  # must not raise
+
+
+def test_season_window_check_catches_day_month_confusion():
+    """A date read day-first lands outside its own season and must be caught."""
+    frame = pd.DataFrame(
+        {
+            "Season": ["2019/20"] * 4,
+            # 2019-12-04 read as 2019-04-12 etc. -- all outside the window.
+            "MatchDate": pd.to_datetime(
+                ["2019-04-12", "2019-03-11", "2019-05-09", "2019-06-01"]
+            ),
+        }
+    )
+    with pytest.raises(ValueError, match="outside their stated season"):
+        validate_dates_against_seasons(frame)
 
 
 def test_devigged_probabilities_sum_to_one_and_expose_overround():

@@ -66,6 +66,76 @@ def normalise_team(series: pd.Series) -> pd.Series:
     return cleaned.replace(TEAM_NAME_ALIASES)
 
 
+def parse_match_dates(values: pd.Series) -> pd.Series:
+    """Parse the match date column, tolerating provider and Excel formats.
+
+    Opening the CSV in Excel and saving rewrites ISO ``2000-08-19`` into
+    locale-dependent ``8/19/00``. That round-trip is lossy in two ways: the
+    century is dropped, and for any date where both fields are 12 or less the
+    day/month order becomes ambiguous. This dataset has 3,532 such rows, so a
+    day-first interpretation would silently misdate a third of the fixtures
+    without raising anything.
+
+    ISO is tried first because it is unambiguous. Only if that fails do we fall
+    back to month-first parsing, which is what Excel writes on a US locale.
+    :func:`validate_dates_against_seasons` then checks the result independently.
+    """
+    text = values.astype("string").str.strip()
+
+    iso = pd.to_datetime(text, format="%Y-%m-%d", errors="coerce")
+    if iso.notna().all():
+        return iso
+
+    month_first = pd.to_datetime(text, errors="coerce", format="mixed", dayfirst=False)
+    if month_first.isna().any():
+        bad = text[month_first.isna()].head(5).tolist()
+        raise ValueError(
+            f"{int(month_first.isna().sum())} rows have unparseable MatchDate "
+            f"values, e.g. {bad}."
+        )
+
+    logger.warning(
+        "MatchDate is not in ISO format (found e.g. %r). Parsed as month-first; "
+        "this is the format Excel writes. Re-export as ISO (YYYY-MM-DD) to "
+        "remove the ambiguity.",
+        text.iloc[0],
+    )
+    return month_first
+
+
+def validate_dates_against_seasons(frame: pd.DataFrame, tolerance: float = 0.01) -> None:
+    """Cross-check parsed dates against the independently stated season label.
+
+    A season labelled ``2019/20`` must contain fixtures between July of the
+    first year and August of the second. If day-first and month-first parsing
+    were confused, a large share of dates would land outside their own season
+    window -- this catches that without needing to know the source format.
+
+    Raises
+    ------
+    ValueError
+        If more than ``tolerance`` of fixtures fall outside their season window.
+    """
+    start_year = frame["Season"].astype("string").str.slice(0, 4).astype(int)
+    window_open = pd.to_datetime(dict(year=start_year, month=7, day=1))
+    window_close = pd.to_datetime(dict(year=start_year + 1, month=8, day=31))
+
+    outside = ~frame["MatchDate"].between(window_open, window_close)
+    breach_rate = float(outside.mean())
+
+    if breach_rate > tolerance:
+        examples = frame.loc[outside, ["Season", "MatchDate"]].head(5)
+        raise ValueError(
+            f"{breach_rate:.1%} of fixtures fall outside their stated season "
+            f"window, which usually means the date column was parsed with the "
+            f"wrong day/month order. Examples:\n{examples.to_string(index=False)}"
+        )
+    logger.info(
+        "Date/season consistency check passed (%.2f%% outside window).",
+        breach_rate * 100,
+    )
+
+
 def load_match_spine(path: Path | None = None) -> pd.DataFrame:
     """Load the curated results file that anchors the whole pipeline.
 
@@ -92,10 +162,8 @@ def load_match_spine(path: Path | None = None) -> pd.DataFrame:
     if missing:
         raise ValueError(f"Spine file is missing required columns: {sorted(missing)}")
 
-    frame["MatchDate"] = pd.to_datetime(frame["MatchDate"], errors="coerce")
-    if frame["MatchDate"].isna().any():
-        bad = int(frame["MatchDate"].isna().sum())
-        raise ValueError(f"{bad} rows in the spine have unparseable MatchDate values.")
+    frame["MatchDate"] = parse_match_dates(frame["MatchDate"])
+    validate_dates_against_seasons(frame)
 
     frame["HomeTeam"] = normalise_team(frame["HomeTeam"])
     frame["AwayTeam"] = normalise_team(frame["AwayTeam"])
