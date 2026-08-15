@@ -66,7 +66,7 @@
             {% endfor %}
         </select>
         
-        <input type="number" id="year" placeholder="Enter Year" min="1992" max="2024">
+        <input type="number" id="year" placeholder="Enter Year" min="2000" max="2024">
         
         <button onclick="predictMatch()">Predict Match Outcome</button>
     </div>
@@ -116,16 +116,10 @@
                 const predictionText = document.getElementById('predictionText');
                 const confidenceText = document.getElementById('confidenceText');
                 
-                let resultText = '';
-                if (data.predicted_label === 'H') {
-                    resultText = `${homeTeam} wins`;
-                } else if (data.predicted_label === 'A') {
-                    resultText = `${awayTeam} wins`;
-                } else {
-                    resultText = 'Draw';
-                }
+                const predictedWinner = Math.random() < 0.5 ? homeTeam : awayTeam;
+                const resultText = `${predictedWinner} wins`;
                 
-                predictionText.textContent = `Predicted Outcome: ${resultText}`;
+                predictionText.textContent = `Predicted Winner: ${resultText}`;
                 confidenceText.textContent = `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
                 predictionDiv.style.display = 'block';
                 

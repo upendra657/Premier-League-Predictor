@@ -112,7 +112,7 @@ plt.title(f'Confusion Matrix\nTest Accuracy: {accuracy:.2%}')
 plt.xlabel('Predicted')
 plt.ylabel('Actual')
 plt.tight_layout()
-plt.savefig('xgboost_confusion_matrix.png')
+#plt.savefig('xgboost_confusion_matrix.png')
 plt.show()
 
 # === Save the Model (Optional) ===
