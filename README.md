@@ -239,8 +239,16 @@ mismatch would otherwise produce a meaningless backtest rather than an error.
 
 ## Known limitations
 
+Summarised here; [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) covers each in
+full, including why the served model is deliberately *not* the best-calibrated
+one.
+
 - **The strict-holdout edge is not statistically significant.** Treat +7.2% as
   an upper bound obtained with hindsight, and +1.5% as the honest expectation.
+- **The best-scoring model is not the one served.** Random Forest with isotonic
+  calibration wins on Brier, RPS and ECE, and loses 18.5% of turnover on
+  held-out seasons. Aggregate calibration is measured over all predictions;
+  betting only samples the tail where the model disagrees with the market.
 - **xG is a proxy.** Match-level shot-quality regression is not shot-level xG;
   real Understat/StatsBomb xG would likely sharpen the rolling features.
 - **Closing odds assume ideal execution.** Real staking faces limits, line

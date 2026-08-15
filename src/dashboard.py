@@ -213,7 +213,9 @@ svg {{ width: 100%; height: auto; display: block; }}
 code {{ font: 12.5px ui-monospace, "SF Mono", Menlo, monospace; background: var(--blue-soft); padding: 1px 5px; border-radius: 4px; }}
 ul {{ padding-left: 20px; }} li {{ margin: 5px 0; color: var(--ink-2); }}
 li strong {{ color: var(--ink); }}
-footer {{ margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 12.5px; }}
+footer {{ margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 12.5px; line-height: 1.9; }}
+footer a {{ color: var(--blue); text-decoration: none; }}
+footer a:hover {{ text-decoration: underline; }}
 </style></head><body><div class="wrap">
 
 <h1>Premier League Decision Engine</h1>
@@ -280,9 +282,11 @@ unstable edge in a near-efficient market. Quote the strong number, keep this cav
 <li><strong>Dockerfile</strong> — multi-stage, non-root, healthchecked; FastAPI serves <code>/predict</code>, <code>/value</code>, <code>/health</code></li>
 </ul>
 
-<footer>Branch <code>v2-decision-engine</code> · {data['fixtures']:,} fixtures ·
-{data['modellable']:,} modellable after burn-in · walk-forward 2013/14–2024/25 ·
-bootstrap CIs clustered by season</footer>
+<footer>{data['fixtures']:,} fixtures · {data['modellable']:,} modellable after burn-in ·
+walk-forward 2013/14–2024/25 · bootstrap CIs clustered by season<br>
+<a href="https://github.com/upendra657/Premier-League-Predictor">Source on GitHub</a> ·
+<a href="https://github.com/upendra657/Premier-League-Predictor/blob/main/docs/LIMITATIONS.md">Known limitations</a>
+</footer>
 </div></body></html>"""
 
 
