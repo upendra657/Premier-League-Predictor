@@ -1,0 +1,381 @@
+{
+  "dataset": {
+    "fixtures": 9380,
+    "seasons": 25,
+    "modellable": 8923,
+    "odds_coverage": 0.9912
+  },
+  "walk_forward_metrics": [
+    {
+      "model": "market_baseline",
+      "n": 4509,
+      "brier": 0.56335,
+      "log_loss": 0.95267,
+      "rps": 0.19412,
+      "ece": 0.01045,
+      "accuracy": 0.55689
+    },
+    {
+      "model": "rf_isotonic",
+      "n": 4509,
+      "brier": 0.57616,
+      "log_loss": 0.98085,
+      "rps": 0.19959,
+      "ece": 0.00926,
+      "accuracy": 0.54336
+    },
+    {
+      "model": "xgb_uncalibrated",
+      "n": 4509,
+      "brier": 0.57923,
+      "log_loss": 0.9789,
+      "rps": 0.20055,
+      "ece": 0.01714,
+      "accuracy": 0.5387
+    },
+    {
+      "model": "xgb_isotonic",
+      "n": 4509,
+      "brier": 0.58082,
+      "log_loss": 0.97966,
+      "rps": 0.20135,
+      "ece": 0.01717,
+      "accuracy": 0.53804
+    },
+    {
+      "model": "xgb_sigmoid",
+      "n": 4509,
+      "brier": 0.58163,
+      "log_loss": 0.97909,
+      "rps": 0.20206,
+      "ece": 0.01708,
+      "accuracy": 0.54003
+    },
+    {
+      "model": "rf_uncalibrated",
+      "n": 4509,
+      "brier": 0.59017,
+      "log_loss": 0.99294,
+      "rps": 0.20331,
+      "ece": 0.02118,
+      "accuracy": 0.51453
+    }
+  ],
+  "calibration_gain": [
+    {
+      "estimator": "random_forest",
+      "brier_before": 0.59017,
+      "brier_after": 0.57616,
+      "brier_delta_pct": -2.37,
+      "ece_before": 0.02118,
+      "ece_after": 0.00926,
+      "ece_delta_pct": -56.28,
+      "log_loss_before": 0.99294,
+      "log_loss_after": 0.98085
+    },
+    {
+      "estimator": "xgboost",
+      "brier_before": 0.57923,
+      "brier_after": 0.58082,
+      "brier_delta_pct": 0.27,
+      "ece_before": 0.01714,
+      "ece_after": 0.01717,
+      "ece_delta_pct": 0.18,
+      "log_loss_before": 0.9789,
+      "log_loss_after": 0.97966
+    }
+  ],
+  "reliability_curve": [
+    {
+      "bin": "(0.0, 0.1]",
+      "n": 831,
+      "mean_predicted": 0.0703,
+      "observed_rate": 0.0975,
+      "gap": -0.0272
+    },
+    {
+      "bin": "(0.1, 0.2]",
+      "n": 2633,
+      "mean_predicted": 0.1537,
+      "observed_rate": 0.1842,
+      "gap": -0.0305
+    },
+    {
+      "bin": "(0.2, 0.3]",
+      "n": 3850,
+      "mean_predicted": 0.2512,
+      "observed_rate": 0.2545,
+      "gap": -0.0034
+    },
+    {
+      "bin": "(0.3, 0.4]",
+      "n": 2257,
+      "mean_predicted": 0.3426,
+      "observed_rate": 0.3248,
+      "gap": 0.0179
+    },
+    {
+      "bin": "(0.4, 0.5]",
+      "n": 1350,
+      "mean_predicted": 0.4479,
+      "observed_rate": 0.4326,
+      "gap": 0.0153
+    },
+    {
+      "bin": "(0.5, 0.6]",
+      "n": 1002,
+      "mean_predicted": 0.548,
+      "observed_rate": 0.5409,
+      "gap": 0.0071
+    },
+    {
+      "bin": "(0.6, 0.7]",
+      "n": 722,
+      "mean_predicted": 0.6458,
+      "observed_rate": 0.6233,
+      "gap": 0.0225
+    },
+    {
+      "bin": "(0.7, 0.8]",
+      "n": 580,
+      "mean_predicted": 0.7463,
+      "observed_rate": 0.7086,
+      "gap": 0.0377
+    },
+    {
+      "bin": "(0.8, 0.9]",
+      "n": 295,
+      "mean_predicted": 0.835,
+      "observed_rate": 0.8169,
+      "gap": 0.0181
+    },
+    {
+      "bin": "(0.9, 1.0]",
+      "n": 7,
+      "mean_predicted": 0.9087,
+      "observed_rate": 0.2857,
+      "gap": 0.623
+    }
+  ],
+  "edge_profile": [
+    {
+      "relative_edge": "(-1.0, 0.0]",
+      "n": 6889,
+      "hit_rate": 0.3387,
+      "avg_odds": 3.9245,
+      "roi": -0.0132
+    },
+    {
+      "relative_edge": "(0.0, 0.05]",
+      "n": 1129,
+      "hit_rate": 0.403,
+      "avg_odds": 3.3351,
+      "roi": -0.0355
+    },
+    {
+      "relative_edge": "(0.05, 0.1]",
+      "n": 1003,
+      "hit_rate": 0.3759,
+      "avg_odds": 3.6091,
+      "roi": -0.0385
+    },
+    {
+      "relative_edge": "(0.1, 0.2]",
+      "n": 1581,
+      "hit_rate": 0.3789,
+      "avg_odds": 3.7724,
+      "roi": 0.1022
+    },
+    {
+      "relative_edge": "(0.2, 0.4]",
+      "n": 1672,
+      "hit_rate": 0.3116,
+      "avg_odds": 4.5525,
+      "roi": 0.0257
+    },
+    {
+      "relative_edge": "(0.4, 10.0]",
+      "n": 1253,
+      "hit_rate": 0.1788,
+      "avg_odds": 7.9061,
+      "roi": -0.0474
+    }
+  ],
+  "backtest": {
+    "full_period": {
+      "strategy": "preregistered_band_full_period",
+      "n_bets": 2154,
+      "n_seasons": 12,
+      "hit_rate": 0.357,
+      "avg_odds": 3.221,
+      "avg_edge": 0.0738,
+      "total_staked": 131187.55,
+      "total_profit": 6328.11,
+      "roi_on_turnover": 0.0482,
+      "final_bankroll": 7328.11,
+      "bankroll_growth": 6.3281,
+      "max_drawdown": -0.4708,
+      "sharpe_per_bet": 0.047,
+      "flat_stake_roi": 0.0717,
+      "market_overround": -0.0007,
+      "roi_ci_low": 0.013,
+      "roi_ci_high": 0.1338,
+      "p_roi_not_positive": 0.0074
+    },
+    "holdout": {
+      "strategy": "fitted_band_holdout",
+      "n_bets": 877,
+      "n_seasons": 6,
+      "hit_rate": 0.3375,
+      "avg_odds": 3.289,
+      "avg_edge": 0.0615,
+      "total_staked": 14145.11,
+      "total_profit": 35.29,
+      "roi_on_turnover": 0.0025,
+      "final_bankroll": 1035.29,
+      "bankroll_growth": 0.0353,
+      "max_drawdown": -0.5389,
+      "sharpe_per_bet": 0.0099,
+      "flat_stake_roi": 0.0148,
+      "market_overround": 0.0018,
+      "roi_ci_low": -0.0921,
+      "roi_ci_high": 0.127,
+      "p_roi_not_positive": 0.3792
+    },
+    "single_book": {
+      "strategy": "preregistered_band_single_book",
+      "n_bets": 2166,
+      "n_seasons": 12,
+      "hit_rate": 0.3509,
+      "avg_odds": 3.167,
+      "avg_edge": 0.0733,
+      "total_staked": 53580.79,
+      "total_profit": 838.31,
+      "roi_on_turnover": 0.0156,
+      "final_bankroll": 1838.31,
+      "bankroll_growth": 0.8383,
+      "max_drawdown": -0.5351,
+      "sharpe_per_bet": 0.0218,
+      "flat_stake_roi": 0.0324,
+      "market_overround": 0.0351,
+      "roi_ci_low": -0.024,
+      "roi_ci_high": 0.0921,
+      "p_roi_not_positive": 0.1253
+    },
+    "fitted_band": {
+      "min_relative_edge": 0.1,
+      "max_relative_edge": 0.3,
+      "max_odds": 5.0
+    }
+  },
+  "equity_by_season": [
+    {
+      "Season": "2013/14",
+      "n_bets": 157,
+      "hit_rate": 0.3758,
+      "staked": 3388.9048,
+      "profit": 154.4297,
+      "roi": 0.0456,
+      "cumulative_profit": 154.4297
+    },
+    {
+      "Season": "2014/15",
+      "n_bets": 193,
+      "hit_rate": 0.3679,
+      "staked": 3830.6812,
+      "profit": -106.9152,
+      "roi": -0.0279,
+      "cumulative_profit": 47.5145
+    },
+    {
+      "Season": "2015/16",
+      "n_bets": 193,
+      "hit_rate": 0.3938,
+      "staked": 3922.5538,
+      "profit": 342.7155,
+      "roi": 0.0874,
+      "cumulative_profit": 390.23
+    },
+    {
+      "Season": "2016/17",
+      "n_bets": 174,
+      "hit_rate": 0.3218,
+      "staked": 4194.8149,
+      "profit": -212.9066,
+      "roi": -0.0508,
+      "cumulative_profit": 177.3235
+    },
+    {
+      "Season": "2017/18",
+      "n_bets": 163,
+      "hit_rate": 0.4172,
+      "staked": 5247.9795,
+      "profit": 952.7989,
+      "roi": 0.1816,
+      "cumulative_profit": 1130.1223
+    },
+    {
+      "Season": "2018/19",
+      "n_bets": 179,
+      "hit_rate": 0.3408,
+      "staked": 7063.6704,
+      "profit": -49.1244,
+      "roi": -0.007,
+      "cumulative_profit": 1080.9979
+    },
+    {
+      "Season": "2019/20",
+      "n_bets": 178,
+      "hit_rate": 0.3539,
+      "staked": 7037.1138,
+      "profit": 979.3771,
+      "roi": 0.1392,
+      "cumulative_profit": 2060.375
+    },
+    {
+      "Season": "2020/21",
+      "n_bets": 192,
+      "hit_rate": 0.375,
+      "staked": 16319.7872,
+      "profit": 3131.1227,
+      "roi": 0.1919,
+      "cumulative_profit": 5191.4977
+    },
+    {
+      "Season": "2021/22",
+      "n_bets": 184,
+      "hit_rate": 0.2989,
+      "staked": 16520.7893,
+      "profit": -1847.3731,
+      "roi": -0.1118,
+      "cumulative_profit": 3344.1246
+    },
+    {
+      "Season": "2022/23",
+      "n_bets": 173,
+      "hit_rate": 0.3873,
+      "staked": 21952.2655,
+      "profit": 3159.8227,
+      "roi": 0.1439,
+      "cumulative_profit": 6503.9473
+    },
+    {
+      "Season": "2023/24",
+      "n_bets": 193,
+      "hit_rate": 0.3161,
+      "staked": 21226.2665,
+      "profit": -1051.0765,
+      "roi": -0.0495,
+      "cumulative_profit": 5452.8708
+    },
+    {
+      "Season": "2024/25",
+      "n_bets": 175,
+      "hit_rate": 0.3429,
+      "staked": 20482.7238,
+      "profit": 875.2414,
+      "roi": 0.0427,
+      "cumulative_profit": 6328.1122
+    }
+  ]
+}
