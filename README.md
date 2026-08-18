@@ -1,180 +1,204 @@
 # Premier League Decision Engine
 
-A calibrated probabilistic forecasting system for English Premier League
-fixtures, with a financial backtesting engine that measures whether those
-forecasts are worth acting on.
+Predicting Premier League matches is easy. Predicting them *better than a
+bookmaker* is not — and that turns out to be the interesting problem.
 
-The question this project answers is not *"who will win?"* — a bookmaker
-already answers that better than almost any model. It is **"where is the
-market wrong, by how much, and how much should you stake on it?"**
+This started as a fairly ordinary classifier: throw twenty-five seasons of
+results at XGBoost, split randomly, report accuracy, done. It got about 53%
+right, which sounds respectable until you notice that always picking the home
+team gets you 46%, and that a random split over time-ordered fixtures is
+quietly training on the future.
+
+So I rebuilt it around a different question. Not *who wins* — bookmakers answer
+that better than I can — but **where is the market wrong, by how much, and what
+would you stake on it?**
+
+That reframing changes everything downstream: what you optimise, how you
+validate, and what counts as success.
 
 ![Results](reports/results.png)
 
+**[See the live results dashboard →](https://upendra657.github.io/Premier-League-Predictor/)**
+
 ---
 
-## Headline results
+## What I found
 
-Walk-forward evaluated on **4,509 fixtures across 12 held-out seasons**
-(2013/14 – 2024/25). The model never sees a season before predicting it.
+Three things, and the first one sounds like bad news.
+
+### The model loses to the bookmaker — and that's fine
+
+Evaluated walk-forward on 4,509 fixtures across 12 held-out seasons, refitting
+after each one so the model never sees a season before predicting it:
 
 | | Brier ↓ | Log loss ↓ | RPS ↓ | ECE ↓ | Accuracy |
 |---|---|---|---|---|---|
-| **Market (de-vigged closing line)** | **0.5634** | **0.9527** | **0.1941** | 0.0105 | **55.7%** |
+| Market (de-vigged line) | **0.5634** | **0.9527** | **0.1941** | 0.0105 | **55.7%** |
 | Random Forest + isotonic | 0.5762 | 0.9809 | 0.1996 | **0.0093** | 54.3% |
 | XGBoost (natively calibrated) | 0.5792 | 0.9789 | 0.2006 | 0.0171 | 53.9% |
-| Random Forest (uncalibrated) | 0.5902 | 0.9929 | 0.2033 | 0.0212 | 51.5% |
+| Random Forest, uncalibrated | 0.5902 | 0.9929 | 0.2033 | 0.0212 | 51.5% |
 
-**The market is sharper. The model is better calibrated.** Those are different
-properties, and the distinction is the whole basis of the strategy: the market
-discriminates outcomes better on average, but the model's stated confidence is
-more trustworthy, which is what staking decisions actually depend on.
+The market wins on Brier, and it should: it has team news, lineups, injuries
+and the weight of other people's money. What it doesn't have is a monopoly on
+being *well calibrated*.
 
-### What calibration bought
+Those are genuinely different properties. Discrimination is how well you
+separate outcomes. Calibration is whether your stated 30% actually happens 30%
+of the time. Accuracy is blind to the second one — and staking depends entirely
+on it, because Kelly sizing takes your probability at face value.
 
-| Estimator | Brier | ECE | Verdict |
-|---|---|---|---|
-| Random Forest | 0.5902 → 0.5762 (**−2.4%**) | 0.0212 → 0.0093 (**−56.3%**) | Isotonic calibration is essential |
-| XGBoost | 0.5792 → 0.5808 (+0.3%) | 0.0171 → 0.0172 (+0.2%) | Already calibrated; post-hoc fitting adds noise |
+So a model can lose the headline metric and still be useful, provided you test
+the right thing. Which is what the rest of this is about.
 
-Random Forest probabilities are vote proportions, not likelihoods, and are
-badly miscalibrated out of the box. XGBoost trained against `mlogloss` is
-optimising a proper scoring rule directly, so it arrives calibrated and
-isotonic regression has nothing left to fix. **Calibration is a targeted
-remedy, not a universal improvement** — a finding this project measures rather
-than assumes.
+### Calibration is a targeted fix, not a free win
 
-### Economic results
+I expected calibration to improve both models. It improved one:
 
-| Scenario | Bets | ROI / unit staked | 95% CI | p(ROI ≤ 0) | Bankroll |
-|---|---|---|---|---|---|
-| Line-shopped, 12 seasons | 2,154 | **+7.2%** | [+1.3%, +13.4%] | 0.007 | £1,000 → £7,328 |
-| Single bookmaker, 12 seasons | 2,166 | +3.2% | [−2.4%, +9.2%] | 0.125 | £1,000 → £1,838 |
-| **Strict holdout** (band refitted on 2013/14–18/19) | 877 | +1.5% | [−9.2%, +12.7%] | 0.379 | £1,000 → £1,035 |
+| | Brier | ECE |
+|---|---|---|
+| Random Forest | 0.5902 → 0.5762 (−2.4%) | 0.0212 → 0.0093 (**−56%**) |
+| XGBoost | 0.5792 → 0.5808 (+0.3%) | 0.0171 → 0.0172 (+0.2%) |
 
-Read those three rows together, because they tell one story:
+Random Forest probabilities are vote proportions across 600 trees. Nothing in
+the fitting objective penalises miscalibration, so they bunch toward the middle
+and isotonic regression has real work to do.
 
-1. **Execution is roughly half the edge.** A single bookmaker's line carries a
-   **4.49% overround**; taking the best price across books cuts it to **0.35%**
-   (mean over the 7,570 fixtures where both prices exist).
-   That 5-point swing is larger than any modelling gain in this project.
-2. **The full-period edge is statistically real** (season-clustered bootstrap,
-   p = 0.007) but rests on a selection band chosen with hindsight over the
-   whole sample.
-3. **Under strict discipline the edge is not significant.** Refit the band on
-   the first six seasons and apply it blind to the last six, and ROI falls to
-   +1.5% with a confidence interval straddling zero.
+XGBoost trains on `mlogloss` — which *is* a strictly proper scoring rule, so
+calibration is already part of the objective. There was nothing left to fix,
+and refitting across folds just added noise.
 
-The honest conclusion is that this system finds a **marginal, unstable edge**
-in a market that is close to efficient. That is the correct scientific finding,
-and reporting it is more useful than a tuned number that would not survive
-contact with a real bankroll.
+I've kept the null result in because it's the more useful half. "Calibration
+improves probabilistic models" is folklore; whether it improves *yours* depends
+on what your loss function was already doing.
 
-### Where the edge actually is
+### Profit lives in a band, not a tail
 
-| Model vs market (relative edge) | Bets | Hit rate | Return |
+This one I didn't see coming. Bucketing every candidate bet by how far the
+model's probability departs from the de-vigged market price:
+
+| Model vs market | Bets | Hit rate | Return |
 |---|---|---|---|
 | < 0% | 6,889 | 33.9% | −1.3% |
-| 0 – 5% | 1,129 | 40.3% | −3.6% |
-| 5 – 10% | 1,003 | 37.6% | −3.9% |
-| **10 – 20%** | **1,581** | **37.9%** | **+10.2%** |
-| **20 – 40%** | **1,672** | **31.2%** | **+2.6%** |
+| 0–5% | 1,129 | 40.3% | −3.6% |
+| 5–10% | 1,003 | 37.6% | −3.9% |
+| **10–20%** | **1,581** | **37.9%** | **+10.2%** |
+| **20–40%** | **1,672** | **31.2%** | **+2.6%** |
 | > 40% | 1,253 | 17.9% | −4.7% |
 
-Profit lives in a **band**, not a tail. Small disagreements with the market are
-noise that cannot clear the overround; enormous disagreements are the model
-being overconfident on longshots. Naive "bet everything with positive EV"
-systems lose money precisely because they treat those three regimes as one.
+Small disagreements are noise that can't clear the bookmaker's margin. Huge
+disagreements are the model being confidently wrong about longshots. The money
+is in the middle.
+
+This is why "bet everything with positive expected value" loses — it treats
+three different regimes as one signal.
 
 ---
 
-## Architecture
+## The number I'd actually defend
+
+The strategy makes money. How much depends on how honest you're being:
+
+| Scenario | Bets | ROI | 95% CI | p(ROI ≤ 0) | £1,000 becomes |
+|---|---|---|---|---|---|
+| Best price across books | 2,154 | +7.2% | +1.3% … +13.4% | 0.007 | £7,328 |
+| One bookmaker | 2,166 | +3.2% | −2.4% … +9.2% | 0.125 | £1,838 |
+| **Strict holdout** | 877 | **+1.5%** | −9.2% … +12.7% | 0.379 | £1,035 |
+
+That last row is the one that matters. The +7.2% uses a selection band I chose
+after looking at the whole sample. Refit that band on 2013/14–2018/19 and apply
+it blind to the six seasons that follow, and the edge drops to +1.5% with a
+confidence interval straddling zero.
+
+**So the honest read is a marginal, unstable edge in a market that's close to
+efficient.** I'd rather report that than a tuned number that falls apart the
+first time someone asks a hard question.
+
+Two things worth knowing alongside it. Maximum drawdown is −47%, and six of
+twelve seasons lost money — the equity curve is far bumpier than the headline
+suggests. And the biggest single lever wasn't modelling at all: one bookmaker's
+margin is 4.49%, while the best price across books is 0.35% (over the 7,570
+fixtures priced both ways). That 4-point swing dwarfs every modelling
+improvement in this repo combined. Where you transact mattered more than what I
+predicted.
+
+---
+
+## How it works
 
 ```
 src/
-├── config.py      Typed configuration; every hyper-parameter in one place
+├── config.py      Every hyper-parameter, typed, in one place
 ├── data.py        Ingestion, team-name reconciliation, odds join, de-vigging
-├── features.py    Elo, shot-quality xG proxy, decayed rolling form, fatigue
-├── train.py       XGBoost + RF, CalibratedClassifierCV, walk-forward scoring
-├── backtest.py    EV detection, band calibration, fractional Kelly simulation
+├── features.py    Elo, xG proxy, decayed rolling form, fatigue
+├── train.py       XGBoost + RF, calibration, walk-forward scoring
+├── backtest.py    EV detection, band selection, fractional Kelly
 ├── report.py      Consolidated results bundle
-├── plots.py       Result figures
+├── dashboard.py   The HTML results page
+├── workbook.py    Formula-driven Excel export
 └── main.py        FastAPI inference service
 tests/             42 tests, weighted toward leakage and staking correctness
-Dockerfile         Multi-stage build, non-root runtime, healthcheck
 ```
 
-### Feature engineering
+**Elo ratings** update after every fixture in one chronological pass. The
+K-factor scales with margin of victory — a 4–0 moves ratings more than a 1–0,
+with diminishing returns so blowouts don't cause runaway inflation. There's a
+65-point home advantage baked into the expectancy curve, and ratings regress
+25% toward the mean between seasons to account for transfers and promotion.
 
-**Dynamic Elo.** Ratings update after every fixture in a single chronological
-pass. The K-factor is scaled by a margin-of-victory multiplier
-(`ln(|GD|+1) · 2.2/(0.001·Δrating + 2.2)`) that rewards big wins with
-diminishing returns while damping rating inflation when a strong favourite
-wins heavily. A 65-point home-advantage offset enters the expectancy curve, and
-ratings regress 25% toward the league mean between seasons to model squad
-turnover and promotion.
+**Expected goals, sort of.** The dataset has no real xG, so I fit a Poisson
+regression mapping shot volume, shots on target and corners onto goals. Shots
+on target dominate the fit, which is reassuring. It's fitted only on the
+burn-in season, which is then excluded from everything else. It's a proxy, not
+the real thing — see the limitations.
 
-**Shot-quality expected goals.** The dataset carries no true xG, so a Poisson
-regression maps each team's shot profile (volume, shots on target, corners,
-accuracy) onto expected goals. Fitted **only on the burn-in season**, which is
-excluded from training and evaluation. Shots on target dominate the fit, as
-they should. This recovers the quantity xG is for: goals deserved from chances
-created, stripped of finishing luck.
+**Form with a memory that fades.** Rolling xG, xGA and points over five
+matches, exponentially decayed with a 2.5-match half-life, so last week counts
+roughly four times as much as five weeks ago.
 
-**Time-decayed rolling form.** Rolling xG, xGA and points over a 5-match window
-with exponential decay (2.5-match half-life), so a fixture five games ago
-carries a quarter of the weight of the most recent one. Implemented as a fixed
-linear combination of lagged series — fully vectorised, no `rolling.apply`.
+**Fatigue** is a rest-day differential, clipped at 14 days so the summer break
+doesn't swamp it.
 
-**Fatigue.** Rest-day differential, clipped at 14 days so summer breaks do not
-swamp the signal.
+### Not leaking the future
 
-### Leakage policy
+This is the part I was most careful about, because leakage is silent — it makes
+your numbers better, not worse, so nothing alerts you.
 
-Every feature is computed strictly from information available before kick-off:
+Elo is snapshotted *before* a fixture is scored, then updated. Rolling windows
+are lagged one match, so a team's own result is never an input to predicting
+it. Rolling state never crosses between teams. The xG model touches only
+burn-in seasons. Training is walk-forward. Even the calibration folds are
+chronological, so the calibrator never learns from matches that postdate its
+own validation slice.
 
-- Elo ratings are snapshotted *before* the fixture is scored, then updated.
-- Rolling windows are lagged one match; a team's own current result is never
-  visible to it.
-- Rolling state never crosses between teams.
-- The shot-quality model touches only burn-in seasons.
-- Walk-forward training uses only seasons that finished before the target one.
-- Calibration folds are chronological (`TimeSeriesSplit`), so the calibrator is
-  never fitted on data postdating its validation slice.
-
-Nine of the 42 tests exist purely to enforce these properties.
+Nine of the 42 tests exist purely to enforce this — including one that fails if
+a rolling mean includes its own row, and one that shuffles class order to catch
+a `predict_proba` column mismatch.
 
 ---
 
-## Quickstart
+## Running it
 
 ```bash
 pip install -r requirements-dev.txt
 
-python -m src.data        # ingest + join odds (downloads once, then cached)
+python -m src.data        # ingest + join odds (cached after first run)
 python -m src.features    # build the feature store
-python -m src.train       # walk-forward evaluation + production artifacts
+python -m src.train       # walk-forward evaluation + artifacts
 python -m src.backtest    # strategy calibration + held-out performance
-python -m src.report      # consolidated results bundle
-python -m src.plots       # figures
+python -m src.report      # consolidated results
+python -m src.dashboard   # the HTML results page
 
 pytest -q                 # 42 tests
 ```
 
-### Serving
+### The API
 
 ```bash
 uvicorn src.main:app --reload
 ```
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /health` | Liveness + whether the model artifact loaded |
-| `GET /model` | Metadata card including walk-forward metrics |
-| `POST /predict` | Calibrated Home / Draw / Away probabilities |
-| `POST /value` | Probabilities + edge + Kelly stake against supplied odds |
-
-Team names are enough — each side's Elo, decayed rolling xG/xGA and form are
-looked up from ratings shipped alongside the model:
+Team names are enough. Each side's Elo, decayed form and xG are looked up from
+ratings shipped with the model:
 
 ```bash
 curl -X POST localhost:8000/predict -H 'Content-Type: application/json' \
@@ -189,80 +213,89 @@ curl -X POST localhost:8000/predict -H 'Content-Type: application/json' \
  "most_likely":"home_win"}
 ```
 
-`form_as_of` names the fixture each side's ratings came from. Burnley's are
-older because they were relegated in 2024 — the response surfaces that rather
-than passing a stale rating off as current. An unknown team returns `404` with
-the list of valid names, so a typo cannot silently become a league-average
-prediction.
+Note `form_as_of`. Burnley's ratings are a year older than Liverpool's because
+they were relegated — the response tells you that rather than quietly serving a
+stale number as if it were current. An unknown team gets a `404` listing valid
+names, so a typo can't silently become a league-average prediction.
 
-Any rating can be supplied explicitly to override the lookup, which is what
-makes counterfactuals answerable:
+You can override any rating explicitly, which is what makes counterfactuals
+answerable — *what if Arsenal were rated 1650 and Chelsea had three days' rest?*
 
-```bash
-curl -X POST localhost:8000/value -H 'Content-Type: application/json' -d '{
-  "fixture": {"home_team":"Arsenal","away_team":"Chelsea",
-              "elo_home":1650, "rest_days_away":3, "matchweek":12},
-  "odds": {"home":2.10,"draw":3.60,"away":3.40}
-}'
-```
+| Endpoint | Does what |
+|---|---|
+| `GET /health` | Liveness, and whether the model artifact actually loaded |
+| `GET /model` | Metadata card with walk-forward metrics |
+| `POST /predict` | Calibrated Home / Draw / Away probabilities |
+| `POST /value` | Adds edge, expected value and Kelly stake against your odds |
 
-Returns per-selection edge, expected value, Kelly stake fraction and a
-`recommended` flag — selections outside the profitable band are returned with a
-zero stake rather than silently dropped. Probabilities are rounded by largest
-remainder, so they sum to exactly 1 at four decimal places.
-
-### Container
+`/value` returns every selection, including the ones outside the profitable
+band — with a zero stake and a `recommended: false`, rather than dropping them
+silently. Probabilities are rounded by largest remainder so they sum to exactly
+1 at four decimal places, because a client computing `1 - home - draw`
+shouldn't disagree with the value served.
 
 ```bash
 docker build -t plde:2.0 .
 docker run -p 8000:8000 plde:2.0
 ```
 
-Multi-stage build; the runtime image carries the virtualenv, `src/` and
-`artifacts/` only — training dependencies and raw data never ship. Runs as an
-unprivileged user with a `/health` healthcheck.
+Multi-stage build. The runtime image carries the virtualenv, `src/` and
+`artifacts/` — training dependencies and raw data never ship. Runs unprivileged
+with a healthcheck.
 
 ---
 
 ## Data
 
-| Source | Role |
-|---|---|
-| Curated EPL results, 2000/01–2024/25 (9,380 fixtures) | Match spine: outcomes, shots, corners, cards |
-| [football-data.co.uk](https://www.football-data.co.uk/) mirror | 1X2 closing odds, average and best-of-market |
+Match results for 2000/01–2024/25 (9,380 fixtures) give the spine: outcomes,
+shots, corners, cards. 1X2 odds come from a
+[football-data.co.uk](https://www.football-data.co.uk/) mirror, both average
+and best-of-market, covering 99.1% of fixtures.
 
-Odds join covers **99.1%** of fixtures. The join is validated, not assumed:
-ingestion raises if coverage drops below 95%, because a silent team-name
-mismatch would otherwise produce a meaningless backtest rather than an error.
-
----
-
-## Known limitations
-
-Summarised here; [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) covers each in
-full, including why the served model is deliberately *not* the best-calibrated
-one.
-
-- **The strict-holdout edge is not statistically significant.** Treat +7.2% as
-  an upper bound obtained with hindsight, and +1.5% as the honest expectation.
-- **The best-scoring model is not the one served.** Random Forest with isotonic
-  calibration wins on Brier, RPS and ECE, and loses 18.5% of turnover on
-  held-out seasons. Aggregate calibration is measured over all predictions;
-  betting only samples the tail where the model disagrees with the market.
-- **xG is a proxy.** Match-level shot-quality regression is not shot-level xG;
-  real Understat/StatsBomb xG would likely sharpen the rolling features.
-- **Closing odds assume ideal execution.** Real staking faces limits, line
-  movement and account restriction. The single-book row is the pessimistic bound.
-- **Rolling form carries a venue-alternation bias.** Because fixtures alternate
-  home and away, a team's decayed form entering a home match is systematically
-  lower than entering an away match (observed in 44 of 46 clubs). The effect is
-  a near-constant offset the tree models absorb, but venue-split form would be
-  a cleaner encoding.
-- **No player-level data.** Injuries, suspensions and rotation are unmodelled
-  and are plausibly the largest remaining source of signal.
+The join is validated rather than assumed — ingestion raises if coverage drops
+below 95%, because a silent team-name mismatch would otherwise hand you a
+meaningless backtest instead of an error. Dates are cross-checked against their
+stated season too, after Excel once helpfully rewrote every ISO date into an
+ambiguous `M/D/YY`.
 
 ---
 
-## License
+## What's wrong with it
 
-MIT.
+The full version is in [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md). The short
+version:
+
+**The holdout edge isn't statistically significant.** Treat +7.2% as an upper
+bound found with hindsight and +1.5% as the honest expectation.
+
+**The model I ship isn't the best-scoring one.** Random Forest with isotonic
+calibration wins on Brier, RPS *and* ECE — and loses 18.5% of turnover on
+held-out seasons, against +1.5% for the XGBoost I actually serve. Aggregate
+calibration is measured across all predictions, but betting only samples the
+tail where the model disagrees with the market, and isotonic regression flattens
+exactly those disagreements. 279 qualifying bets instead of 877. It's the most
+counter-intuitive result here and the one I'd most want you to read.
+
+**Best-price execution may not be achievable.** It assumes accounts everywhere,
+catching prices before they move, and not getting limited — which is what
+happens to people who consistently beat the closing line.
+
+**xG is a proxy.** A match-level shot-quality regression is not shot-level xG.
+
+**Rolling form isn't venue-split.** Fixtures alternate home and away, so decayed
+form entering a home match runs systematically lower than entering an away one
+(true for 44 of 46 clubs). The trees absorb most of it, but it's a sloppy
+encoding.
+
+**No player data at all.** Injuries, suspensions, rotation — unmodelled, and
+plausibly the single largest reason the market out-discriminates this.
+
+If I picked one thing up next it would be closing-line value tracking: whether
+the model beats the price the market settles at. It reaches significance in
+hundreds of bets where ROI needs thousands, so it's the fastest honest read on
+whether an edge is real.
+
+---
+
+MIT licensed. Every figure above regenerates with
+`python -m src.train && python -m src.backtest && python -m src.report`.
