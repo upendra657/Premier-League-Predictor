@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Premier League Decision Engine — Try it</title>
+<meta name="description" content="Calibrated match probabilities and expected-value staking analysis, computed in your browser.">
+<style>
+:root{
+  color-scheme:light dark;
+  --surface:#fcfcfb; --card:#fff; --line:#e6e5e1;
+  --ink:#0b0b0b; --ink-2:#52514e; --ink-3:#86847d;
+  --blue:#2a78d6; --red:#e34948; --green:#2e7d51; --amber:#b8860b;
+  --blue-soft:rgba(42,120,214,.10); --red-soft:rgba(227,73,72,.09);
+  --green-soft:rgba(46,125,81,.10); --amber-soft:rgba(184,134,11,.11);
+}
+@media (prefers-color-scheme:dark){:root{
+  --surface:#1a1a19; --card:#232322; --line:#34332f;
+  --ink:#fff; --ink-2:#c3c2b7; --ink-3:#8d8b82;
+  --blue:#3987e5; --red:#e66767; --green:#4fa87a; --amber:#d9a441;
+  --blue-soft:rgba(57,135,229,.14); --red-soft:rgba(230,103,103,.12);
+  --green-soft:rgba(79,168,122,.14); --amber-soft:rgba(217,164,65,.13);
+}}
+*{box-sizing:border-box}
+body{margin:0;padding:28px 20px 72px;background:var(--surface);color:var(--ink);
+ font:15px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:820px;margin:0 auto}
+h1{font-size:26px;margin:0 0 6px;letter-spacing:-.02em}
+.sub{color:var(--ink-2);margin:0 0 6px;max-width:64ch}
+.nav{font-size:13.5px;margin:0 0 26px}
+.nav a{color:var(--blue);text-decoration:none}
+.nav a:hover{text-decoration:underline}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+ padding:20px 22px;margin:16px 0}
+.card h2{font-size:15px;margin:0 0 14px;letter-spacing:-.01em}
+
+.row{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:end}
+label{display:block;font-size:12px;color:var(--ink-3);margin-bottom:5px;
+ text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+select,input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;
+ background:var(--surface);color:var(--ink);font:inherit;font-size:14.5px}
+select:focus,input:focus{outline:2px solid var(--blue);outline-offset:1px;border-color:transparent}
+.vs{padding-bottom:10px;color:var(--ink-3);font-size:13px}
+
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:14px}
+.odds{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:4px}
+
+.bars{margin:4px 0 0}
+.bar{display:grid;grid-template-columns:74px 1fr 62px;gap:10px;align-items:center;margin:9px 0}
+.bar__l{font-size:13.5px;color:var(--ink-2)}
+.bar__t{height:26px;background:var(--blue-soft);border-radius:6px;overflow:hidden}
+.bar__f{height:100%;background:var(--blue);border-radius:6px;transition:width .28s ease}
+.bar__v{text-align:right;font-variant-numeric:tabular-nums;font-weight:650;font-size:14.5px}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+th,td{text-align:right;padding:8px 9px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+td{font-variant-numeric:tabular-nums}
+tr.bet td{color:var(--green);font-weight:650;background:var(--green-soft)}
+
+.note{border-left:3px solid var(--blue);background:var(--blue-soft);padding:12px 16px;
+ border-radius:0 9px 9px 0;font-size:13.5px;color:var(--ink-2);margin:14px 0 0}
+.note--warn{border-left-color:var(--amber);background:var(--amber-soft)}
+.note strong{color:var(--ink)}
+.prov{font-size:12.5px;color:var(--ink-3);margin-top:12px}
+.loading{color:var(--ink-3);font-size:14px}
+footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);
+ color:var(--ink-3);font-size:12.5px;line-height:1.9}
+footer a{color:var(--blue);text-decoration:none}
+code{font:12.5px ui-monospace,"SF Mono",Menlo,monospace;background:var(--blue-soft);
+ padding:1px 5px;border-radius:4px}
+@media (max-width:560px){.row{grid-template-columns:1fr}.vs{display:none}}
+</style></head><body><div class="wrap">
+
+<h1>Premier League Decision Engine</h1>
+<p class="sub">Calibrated match probabilities, and whether a given bookmaker price is
+worth acting on. The model runs entirely in your browser — nothing is sent anywhere.</p>
+<p class="nav"><a href="results.html">Full results and methodology →</a> ·
+<a href="https://github.com/upendra657/Premier-League-Predictor">Source on GitHub</a></p>
+
+<div class="card">
+  <h2>Fixture</h2>
+  <div class="row">
+    <div><label for="home">Home team</label><select id="home"></select></div>
+    <div class="vs">vs</div>
+    <div><label for="away">Away team</label><select id="away"></select></div>
+  </div>
+  <div class="controls">
+    <div><label for="rh">Home rest (days)</label><input id="rh" type="number" min="0" max="14" value="7"></div>
+    <div><label for="ra">Away rest (days)</label><input id="ra" type="number" min="0" max="14" value="7"></div>
+    <div><label for="mw">Matchweek</label><input id="mw" type="number" min="1" max="38" value="19"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Model probabilities</h2>
+  <div id="bars" class="bars"><p class="loading">Loading model…</p></div>
+  <p class="prov" id="prov"></p>
+</div>
+
+<div class="card">
+  <h2>Is the price worth taking?</h2>
+  <p class="sub" style="font-size:13.5px;margin-bottom:12px">Enter the decimal odds a bookmaker
+  is offering. The engine strips the margin, compares against its own probabilities, and sizes
+  any qualifying bet with quarter-Kelly.</p>
+  <div class="odds">
+    <div><label for="oh">Home odds</label><input id="oh" type="number" step="0.01" min="1.01" value="2.10"></div>
+    <div><label for="od">Draw odds</label><input id="od" type="number" step="0.01" min="1.01" value="3.60"></div>
+    <div><label for="oa">Away odds</label><input id="oa" type="number" step="0.01" min="1.01" value="3.40"></div>
+  </div>
+  <table id="value"><thead><tr>
+    <th>Outcome</th><th>Model</th><th>Fair market</th><th>Edge</th><th>EV</th><th>Stake</th>
+  </tr></thead><tbody></tbody></table>
+  <p class="prov" id="book"></p>
+  <div class="note" id="verdict"></div>
+</div>
+
+<div class="note note--warn">
+  <strong>This is a demonstration of probability calibration and decision theory, not betting
+  advice.</strong> The strategy's edge is marginal and not statistically significant out of
+  sample — refitting the selection rule on earlier seasons and applying it blind drops return
+  from +7.2% to +1.5%, with a confidence interval straddling zero. Maximum drawdown was −47%.
+  <a href="results.html">The full results say so in detail.</a>
+</div>
+
+<footer>
+  Ratings come from each team's most recent fixture in the training data (through May 2025), so
+  a relegated club's numbers are older — the panel above tells you which date each side's form
+  is from. XGBoost, 1,200 trees, evaluated in JavaScript; predictions match the Python service
+  to 2×10⁻⁷.<br>
+  <a href="results.html">Results</a> ·
+  <a href="https://github.com/upendra657/Premier-League-Predictor">Source</a> ·
+  <a href="https://github.com/upendra657/Premier-League-Predictor/blob/main/docs/LIMITATIONS.md">Known limitations</a>
+</footer>
+
+</div>
+<script>
+const OUTCOMES = ["Home win", "Draw", "Away win"];
+const STRATEGY = {minEdge:0.03, minRel:0.10, maxRel:0.40, minOdds:1.8, maxOdds:5.0,
+                  kellyFraction:0.25, maxStake:0.02};
+const ELO = {homeAdvantage:65, scale:400};
+let MODEL = null, TEAMS = null;
+
+const fr = Math.fround;   // XGBoost compares in float32; so must we.
+
+function featureVector(h, a, restH, restA, mw) {
+  const eloDiff = h.elo - a.elo;
+  const byName = {
+    elo_home: h.elo, elo_away: a.elo, elo_diff: eloDiff,
+    elo_win_expectancy: 1 / (1 + Math.pow(10, -(eloDiff + ELO.homeAdvantage) / ELO.scale)),
+    xg_home_roll: h.xg_roll, xg_away_roll: a.xg_roll,
+    xga_home_roll: h.xga_roll, xga_away_roll: a.xga_roll,
+    xg_diff_home: h.xg_roll - h.xga_roll,
+    xg_diff_away: a.xg_roll - a.xga_roll,
+    xg_matchup_edge: (h.xg_roll + a.xga_roll) - (a.xg_roll + h.xga_roll),
+    points_home_roll: h.points_roll, points_away_roll: a.points_roll,
+    form_diff: h.points_roll - a.points_roll,
+    rest_days_home: restH, rest_days_away: restA, rest_diff: restH - restA,
+    matchweek: mw,
+  };
+  return MODEL.features.map(name => fr(byName[name]));
+}
+
+function predict(x) {
+  const scores = MODEL.base.slice();
+  for (let i = 0; i < MODEL.trees.length; i++) {
+    const t = MODEL.trees[i];
+    let n = 0;
+    while (t.l[n] !== -1) {
+      const v = x[t.f[n]];
+      n = (v === null || Number.isNaN(v))
+        ? (t.d[n] ? t.l[n] : t.r[n])
+        : (v < fr(t.t[n]) ? t.l[n] : t.r[n]);
+    }
+    scores[i % MODEL.n_class] += t.t[n];
+  }
+  const m = Math.max(...scores);
+  const e = scores.map(s => Math.exp(s - m));
+  const tot = e.reduce((p, c) => p + c, 0);
+  return e.map(v => v / tot);
+}
+
+// Largest remainder, so the displayed values sum to exactly 100.0%.
+function roundToUnit(p, places = 4) {
+  const scale = Math.pow(10, places);
+  const scaled = p.map(v => v * scale);
+  const floors = scaled.map(Math.floor);
+  let short = Math.round(scale - floors.reduce((a, b) => a + b, 0));
+  const order = scaled.map((v, i) => [v - floors[i], i]).sort((a, b) => b[0] - a[0]);
+  for (let k = 0; k < short; k++) floors[order[k % order.length][1]] += 1;
+  return floors.map(v => v / scale);
+}
+
+function kelly(p, odds) {
+  const b = odds - 1;
+  if (b <= 0) return 0;
+  const f = (p * b - (1 - p)) / b;
+  return Math.max(0, Math.min(f * STRATEGY.kellyFraction, STRATEGY.maxStake));
+}
+
+const pct = v => (v * 100).toFixed(1) + "%";
+
+function render() {
+  const hName = document.getElementById("home").value;
+  const aName = document.getElementById("away").value;
+  if (!hName || !aName || hName === aName) {
+    document.getElementById("bars").innerHTML =
+      '<p class="loading">Pick two different teams.</p>';
+    document.querySelector("#value tbody").innerHTML = "";
+    document.getElementById("verdict").textContent = "";
+    document.getElementById("prov").textContent = "";
+    return;
+  }
+  const h = TEAMS[hName], a = TEAMS[aName];
+  const restH = +document.getElementById("rh").value || 0;
+  const restA = +document.getElementById("ra").value || 0;
+  const mw = +document.getElementById("mw").value || 1;
+
+  // Raw probabilities drive the maths; a separately rounded copy drives the
+  // display. Rounding to 4dp then printing 1dp of a percentage double-rounds
+  // and the bars can read 100.1%, so round at the precision actually shown.
+  const probs = predict(featureVector(h, a, restH, restA, mw));
+  const shown = roundToUnit(probs, 3);
+  const labels = [`${hName} win`, "Draw", `${aName} win`];
+  document.getElementById("bars").innerHTML = shown.map((p, i) =>
+    `<div class="bar"><div class="bar__l">${labels[i]}</div>
+     <div class="bar__t"><div class="bar__f" style="width:${(p * 100).toFixed(1)}%"></div></div>
+     <div class="bar__v">${pct(p)}</div></div>`).join("");
+  document.getElementById("prov").textContent =
+    `Form as of — ${hName}: ${h.as_of} · ${aName}: ${a.as_of}`;
+
+  const odds = [+document.getElementById("oh").value,
+                +document.getElementById("od").value,
+                +document.getElementById("oa").value];
+  const tbody = document.querySelector("#value tbody");
+  if (odds.some(o => !o || o <= 1)) {
+    tbody.innerHTML = "";
+    document.getElementById("book").textContent = "";
+    document.getElementById("verdict").textContent = "Enter all three odds to see the analysis.";
+    return;
+  }
+
+  const implied = odds.map(o => 1 / o);
+  const booksum = implied.reduce((p, c) => p + c, 0);
+  const fair = implied.map(v => v / booksum);
+
+  let anyBet = false;
+  tbody.innerHTML = probs.map((p, i) => {
+    const edge = p - fair[i];
+    const rel = p / fair[i] - 1;
+    const ev = p * odds[i] - 1;
+    const qualifies = edge >= STRATEGY.minEdge && rel >= STRATEGY.minRel &&
+                      rel <= STRATEGY.maxRel && odds[i] >= STRATEGY.minOdds &&
+                      odds[i] <= STRATEGY.maxOdds && ev > 0;
+    if (qualifies) anyBet = true;
+    const stake = qualifies ? kelly(p, odds[i]) : 0;
+    return `<tr class="${qualifies ? "bet" : ""}">
+      <td>${labels[i]} @ ${odds[i].toFixed(2)}</td><td>${pct(shown[i])}</td><td>${pct(fair[i])}</td>
+      <td>${(edge * 100).toFixed(1)} pts</td><td>${ev >= 0 ? "+" : ""}${(ev * 100).toFixed(1)}%</td>
+      <td>${qualifies ? pct(stake) + " of bankroll" : "—"}</td></tr>`;
+  }).join("");
+
+  document.getElementById("book").textContent =
+    `Bookmaker margin on this market: ${((booksum - 1) * 100).toFixed(2)}%`;
+  document.getElementById("verdict").innerHTML = anyBet
+    ? `<strong>A selection qualifies.</strong> It clears the 3-point absolute edge, sits inside
+       the 10–40% relative-edge band where returns were positive, and the price is between 1.8
+       and 5.0. Stake is quarter-Kelly, capped at 2% of bankroll.`
+    : `<strong>No bet.</strong> Nothing here clears the selection band. Most opportunities don't
+       — only 2,154 of 13,527 candidates qualified across twelve seasons, and disagreements
+       below 10% or above 40% lost money.`;
+}
+
+async function boot() {
+  const [model, teams] = await Promise.all([
+    fetch("model.json").then(r => r.json()),
+    fetch("teams.json").then(r => r.json()),
+  ]);
+  MODEL = model; TEAMS = teams;
+  const names = Object.keys(teams).sort();
+  const home = document.getElementById("home"), away = document.getElementById("away");
+  for (const n of names) {
+    home.add(new Option(n, n));
+    away.add(new Option(n, n));
+  }
+  home.value = names.includes("Liverpool") ? "Liverpool" : names[0];
+  away.value = names.includes("Burnley") ? "Burnley" : names[1];
+  for (const id of ["home", "away", "rh", "ra", "mw", "oh", "od", "oa"]) {
+    document.getElementById(id).addEventListener("input", render);
+  }
+  render();
+}
+
+boot().catch(err => {
+  document.getElementById("bars").innerHTML =
+    '<p class="loading">Could not load the model. Try a refresh.</p>';
+  console.error(err);
+});
+</script></body></html>

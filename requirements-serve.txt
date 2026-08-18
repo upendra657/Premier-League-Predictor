@@ -2,7 +2,9 @@
 pandas>=2.1,<3.0
 numpy>=1.26,<3.0
 scikit-learn>=1.4,<2.0
-xgboost>=2.0,<4.0
+# CPU-only build. The default xgboost wheel declares nvidia-* CUDA
+# dependencies that pull ~454MB into an image that will never see a GPU.
+xgboost-cpu>=2.0,<4.0
 joblib>=1.3
 fastapi>=0.110
 uvicorn[standard]>=0.29

@@ -1,15 +1,18 @@
-# Publish the results dashboard to GitHub Pages.
+# Publish the interactive demo and the results dashboard to GitHub Pages.
 #
 # The site is assembled from reports/ rather than uploading the repository
-# wholesale: the dashboard is a self-contained HTML document, and shipping the
-# whole tree would publish archive/v1 and several megabytes of superseded CSVs
-# to a web host for no reason.
-name: Deploy results dashboard to Pages
+# wholesale: shipping the whole tree would publish archive/v1 and several
+# megabytes of superseded CSVs to a web host for no reason.
+#
+# The demo runs the model in the visitor's browser, so there is no server to
+# wake up and nothing to keep warm.
+name: Deploy demo and dashboard to Pages
 
 on:
   push:
     branches: ["main"]
     paths:
+      - "reports/web/**"
       - "reports/dashboard.html"
       - ".github/workflows/static.yml"
   workflow_dispatch:
@@ -19,7 +22,6 @@ permissions:
   pages: write
   id-token: write
 
-# One deployment at a time, but never cancel one that is already running.
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -37,14 +39,16 @@ jobs:
       - name: Assemble site
         run: |
           set -euo pipefail
-          test -f reports/dashboard.html || {
-            echo "reports/dashboard.html missing; regenerate with python -m src.dashboard"
-            exit 1
-          }
+          for f in reports/web/index.html reports/web/model.json \
+                   reports/web/teams.json reports/dashboard.html; do
+            test -f "$f" || { echo "missing $f"; exit 1; }
+          done
           mkdir -p _site
-          cp reports/dashboard.html _site/index.html
-          # Nothing else is copied: the dashboard inlines its own CSS and SVG.
-          echo "Assembled $(du -h _site/index.html | cut -f1) site"
+          cp reports/web/index.html  _site/index.html      # interactive demo
+          cp reports/web/model.json  _site/model.json      # booster, ~172KB gzipped
+          cp reports/web/teams.json  _site/teams.json
+          cp reports/dashboard.html  _site/results.html    # full results
+          echo "Assembled:"; du -h _site/* | sed 's/^/  /'
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
