@@ -14,6 +14,7 @@ on:
     paths:
       - "reports/web/**"
       - "reports/dashboard.html"
+      - "reports/scorecard.html"
       - ".github/workflows/static.yml"
   workflow_dispatch:
 
@@ -40,7 +41,8 @@ jobs:
         run: |
           set -euo pipefail
           for f in reports/web/index.html reports/web/model.json \
-                   reports/web/teams.json reports/dashboard.html; do
+                   reports/web/teams.json reports/dashboard.html \
+                   reports/scorecard.html; do
             test -f "$f" || { echo "missing $f"; exit 1; }
           done
           mkdir -p _site
@@ -48,6 +50,7 @@ jobs:
           cp reports/web/model.json  _site/model.json      # booster, ~172KB gzipped
           cp reports/web/teams.json  _site/teams.json
           cp reports/dashboard.html  _site/results.html    # full results
+          cp reports/scorecard.html  _site/scorecard.html  # the track record
           echo "Assembled:"; du -h _site/* | sed 's/^/  /'
 
       - name: Setup Pages

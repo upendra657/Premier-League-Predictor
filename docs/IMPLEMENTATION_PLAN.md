@@ -82,7 +82,7 @@ an exponential half-life. Implement as `Σ wₖ·x.shift(k) / Σ wₖ·mask.shif
 vectorised, and the `shift` makes the one-match lag structural rather than
 something a future edit can accidentally remove.
 
-**3e. Fatigue and derived terms.** Rest-day differential; matchup interactions
+**3e. Rest-day and derived terms.** Rest-day differential; matchup interactions
 (`xg_matchup_edge` = what the home side creates against what the away side
 concedes, minus the mirror image).
 

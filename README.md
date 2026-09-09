@@ -1,5 +1,12 @@
 # Premier League Decision Engine
 
+> **Coming back to this after a while?** Read
+> **[WHAT_THIS_PROJECT_IS.md](WHAT_THIS_PROJECT_IS.md)** first — it explains the
+> whole system in plain English in about ten minutes, including the parts that
+> are broken. Then look at
+> **[the scorecard](https://upendra657.github.io/Premier-League-Predictor/scorecard.html)**,
+> which is 4,509 real predictions and how often each was wrong.
+
 Predicting Premier League matches is easy. Predicting them *better than a
 bookmaker* is not — and that turns out to be the interesting problem.
 
@@ -18,7 +25,9 @@ validate, and what counts as success.
 
 ![Results](reports/results.png)
 
-**[See the live results dashboard →](https://upendra657.github.io/Premier-League-Predictor/)**
+**[The scorecard — every prediction, and how often it was wrong →](https://upendra657.github.io/Premier-League-Predictor/scorecard.html)**
+
+**[Live results dashboard →](https://upendra657.github.io/Premier-League-Predictor/)**
 
 ---
 
@@ -98,7 +107,7 @@ three different regimes as one signal.
 
 The strategy makes money. How much depends on how honest you're being:
 
-| Scenario | Bets | ROI | 95% CI | p(ROI ≤ 0) | £1,000 becomes |
+| Scenario | Bets | Flat-stake ROI | 95% CI | p(ROI ≤ 0) | £1,000 becomes |
 |---|---|---|---|---|---|
 | Best price across books | 2,154 | +7.2% | +1.3% … +13.4% | 0.007 | £7,328 |
 | One bookmaker | 2,166 | +3.2% | −2.4% … +9.2% | 0.125 | £1,838 |
@@ -112,6 +121,15 @@ confidence interval straddling zero.
 **So the honest read is a marginal, unstable edge in a market that's close to
 efficient.** I'd rather report that than a tuned number that falls apart the
 first time someone asks a hard question.
+
+One note on which number this is. The ROI above is **flat-stake**: a constant
+amount on every selection. That is deliberate — with a fixed stake, ROI on
+turnover is just the mean return per unit risked, which isolates *how good the
+selection was* from *how the money was sized*. The confidence intervals and
+p-values are bootstrapped on that same per-unit series, so they belong to this
+column and not to any other. The fractional-Kelly ledger over the identical bets
+returned **+4.8%** (`results.json → roi_on_turnover`); the flat figure is the
+one to quote when the question is whether the model picked well.
 
 Two things worth knowing alongside it. Maximum drawdown is −47%, and six of
 twelve seasons lost money — the equity curve is far bumpier than the headline
@@ -155,8 +173,15 @@ the real thing — see the limitations.
 matches, exponentially decayed with a 2.5-match half-life, so last week counts
 roughly four times as much as five weeks ago.
 
-**Fatigue** is a rest-day differential, clipped at 14 days so the summer break
-doesn't swamp it.
+**Rest days** — a differential between the sides, clipped at 14 days so the
+summer break doesn't swamp it. I originally called this a fatigue metric. It
+isn't, and the data says so plainly: the model learned that *more* rest slightly
+**reduces** home win probability, and the raw rates agree (50.0% home wins on
+0–3 days' rest against 44.9% on 11–14). It isn't a hidden team-quality effect
+either — the correlation between rest days and Elo is −0.007. So the signal is
+real and my explanation for it was wrong. It also ranks 16th, 17th and 18th of
+18 features by gain, so it barely moves anything. I've left it in and relabelled
+it rather than quietly deleting the evidence.
 
 ### Not leaking the future
 

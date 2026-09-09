@@ -13,9 +13,9 @@ or borrowed from a different experiment.
 
 - **Cut probability miscalibration by 56% (expected calibration error 0.0212 → 0.0093) and Brier score by 2.4%** by applying isotonic `CalibratedClassifierCV` over chronological folds, evaluating on Brier score, log loss and Ranked Probability Score rather than accuracy; benchmarking against the de-vigged bookmaker line showed the calibrated model **better calibrated than the market itself** (ECE 0.0093 vs 0.0105) despite the market's superior discrimination.
 
-- **Built a vectorized backtesting engine simulating 13,527 candidate positions across 12 walk-forward held-out seasons**, isolating positive-EV opportunities where model probability exceeded de-vigged market probability; a fractional-Kelly strategy with per-bet and daily exposure caps returned **+7.2% ROI on turnover (95% bootstrap CI +1.3% to +13.4%, p = 0.007), growing a £1,000 bankroll to £7,328** at a −47% maximum drawdown.
+- **Built a vectorized backtesting engine simulating 13,527 candidate positions across 12 walk-forward held-out seasons**, isolating positive-EV opportunities where model probability exceeded de-vigged market probability; selection quality measured at flat stake returned **+7.2% ROI on turnover (fractional Kelly over the same bets: +4.8%) (95% bootstrap CI +1.3% to +13.4%, p = 0.007), growing a £1,000 bankroll to £7,328** at a −47% maximum drawdown.
 
-- **Quantified execution cost as the single largest driver of profitability** — demonstrating that single-bookmaker pricing carries a 4.49% overround versus 0.35% when line-shopping across the same 7,570 fixtures, a 4-point swing exceeding every modelling gain in the project — and shipped the model as a containerized FastAPI service (`/predict`, `/value`, `/health`) with multi-stage Docker build, non-root runtime and healthcheck.
+- **Quantified execution cost as the single largest driver of profitability** — demonstrating that single-bookmaker pricing carries a 4.49% overround versus 0.35% when line-shopping across the same 7,570 fixtures, a 4-point swing exceeding every modelling gain in the project — and wrote the serving layer as a FastAPI service (`/predict`, `/value`, `/health`) with a multi-stage Dockerfile, non-root runtime and healthcheck. **Not yet built or deployed — do not claim otherwise.** What *is* live is the model exported to run client-side in the browser, verified against the Python service to 2×10⁻⁷ across 510 feature vectors.
 
 ---
 
@@ -111,7 +111,7 @@ significance far faster than ROI does.
 
 **If you need a one-line project summary:**
 
-- **Premier League Decision Engine** — Calibrated 3-class match forecaster (XGBoost + isotonic calibration) with a vectorized fractional-Kelly backtesting engine over 25 seasons; reduced calibration error 56%, achieved +7.2% ROI on turnover across 12 walk-forward held-out seasons (95% CI +1.3%–+13.4%), deployed as a containerized FastAPI service.
+- **Premier League Decision Engine** — Calibrated 3-class match forecaster (XGBoost + isotonic calibration) with a vectorized fractional-Kelly backtesting engine over 25 seasons; reduced calibration error 56%, achieved +7.2% ROI on turnover across 12 walk-forward held-out seasons (95% CI +1.3%–+13.4%, flat stake), with the 1,200-tree model exported to run client-side in the browser.
 
 ---
 

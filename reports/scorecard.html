@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Scorecard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --paper:#F1F3F2; --surface:#FFF; --surface-2:#E6EBE8;
+    --ink:#10161B; --ink-2:#38454E; --muted:#6C7A77;
+    --rule:#D2D9D6; --grid:#E3E8E6;
+    --model:#0B6E9B; --market:#C2571A;
+    --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+    --f-body:"Newsreader",Georgia,serif;
+    --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark) {
+    :root:not([data-theme="light"]) {
+      --paper:#0C1012; --surface:#141A1D; --surface-2:#1C2428;
+      --ink:#E9EEEC; --ink-2:#B2BFBB; --muted:#83918D;
+      --rule:#283236; --grid:#232D31;
+      --model:#3795BC; --market:#C87A3E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#0C1012; --surface:#141A1D; --surface-2:#1C2428;
+    --ink:#E9EEEC; --ink-2:#B2BFBB; --muted:#83918D;
+    --rule:#283236; --grid:#232D31;
+    --model:#3795BC; --market:#C87A3E;
+  }
+  *,*::before,*::after { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink);
+         font-family:var(--f-body); font-size:1.0625rem; line-height:1.6;
+         -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:64rem; margin:0 auto; padding:0 1.75rem 5rem; }
+  h1,h2,.lbl,.tile-v,.dlabel { font-family:var(--f-display); }
+  h1 { font-size:clamp(2.4rem,6vw,3.9rem); font-weight:800; letter-spacing:-.028em;
+        line-height:1; margin:0; text-wrap:balance; }
+  h2 { font-size:clamp(1.35rem,2.4vw,1.7rem); font-weight:700;
+        letter-spacing:-.016em; margin:0; text-wrap:balance; }
+  p { margin:0; max-width:38rem; }
+  .lbl { font-family:var(--f-mono); font-size:.68rem; font-weight:600;
+          letter-spacing:.13em; text-transform:uppercase; color:var(--muted); }
+  .lede { font-size:clamp(1.1rem,1.9vw,1.28rem); line-height:1.5; color:var(--ink-2);
+           max-width:34rem; }
+  .note { font-size:.92rem; color:var(--muted); line-height:1.5; max-width:38rem; }
+  header { border-bottom:2px solid var(--ink); padding:3.5rem 0 2rem;
+            display:flex; flex-direction:column; gap:1.4rem; }
+  .kicker { display:flex; flex-wrap:wrap; gap:.5rem 1.4rem; }
+  .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));
+            gap:1px; background:var(--rule); border-bottom:1px solid var(--rule); }
+  .tile { background:var(--paper); padding:1.15rem 0 1.35rem;
+           display:flex; flex-direction:column; gap:.35rem; }
+  .tile-v { font-size:1.7rem; font-weight:700; letter-spacing:-.02em; line-height:1;
+             font-variant-numeric:tabular-nums; }
+  .tile-v.mdl { color:var(--model); } .tile-v.mkt { color:var(--market); }
+  .tile-n { font-size:.88rem; color:var(--muted); line-height:1.35; }
+  section { padding-top:3.5rem; }
+  .head { display:flex; flex-direction:column; gap:.65rem; padding-bottom:1.5rem; }
+  .fig { background:var(--surface); border:1px solid var(--rule); padding:1.25rem;
+          overflow-x:auto; }
+  .two { display:grid; grid-template-columns:minmax(0,460px) minmax(0,1fr);
+          gap:2rem; align-items:center; }
+  @media (max-width:52rem) { .two { grid-template-columns:1fr; } }
+  svg { display:block; width:100%; height:auto; }
+  .grid { stroke:var(--grid); stroke-width:1; }
+  .ideal { stroke:var(--muted); stroke-width:1.5; stroke-dasharray:4 4; }
+  .ideal-label,.axis { font-family:var(--f-mono); font-size:10px; fill:var(--muted);
+                        letter-spacing:.06em; text-transform:uppercase; }
+  .tick { font-family:var(--f-mono); font-size:10px; fill:var(--muted);
+           font-variant-numeric:tabular-nums; }
+  .pt circle { fill:var(--model); stroke:var(--surface); stroke-width:2; }
+  .pt.mkt circle { fill:var(--market); }
+  .pt:hover circle { stroke:var(--ink); }
+  .line { fill:none; stroke-width:2; }
+  .line.mdl { stroke:var(--model); } .line.mkt { stroke:var(--market); }
+  .dlabel { font-size:11px; font-weight:700; }
+  .dlabel.mdl { fill:var(--model); } .dlabel.mkt { fill:var(--market); }
+  .scroll { overflow-x:auto; border:1px solid var(--rule); background:var(--surface); }
+  table { border-collapse:collapse; width:100%; min-width:36rem; font-size:.93rem; }
+  th,td { text-align:left; padding:.6rem .9rem; border-bottom:1px solid var(--rule); }
+  th { font-family:var(--f-mono); font-size:.64rem; font-weight:600;
+        letter-spacing:.11em; text-transform:uppercase; color:var(--muted);
+        background:var(--surface-2); white-space:nowrap; }
+  tbody tr:last-child td { border-bottom:none; }
+  td { color:var(--ink-2); }
+  td.dt,td.sc,td.cl { font-family:var(--f-mono); font-variant-numeric:tabular-nums;
+                       white-space:nowrap; }
+  td.tm { color:var(--ink); font-weight:500; }
+  td.sc { color:var(--ink); font-weight:600; }
+  td.cl { color:var(--model); }
+  .stack { display:flex; flex-direction:column; gap:1rem; }
+  footer { margin-top:3.5rem; padding-top:1.4rem; border-top:1px solid var(--rule); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">
+      <span class="lbl">Premier League Predictor</span>
+      <span class="lbl">2013/14 – 2024/25</span>
+      <span class="lbl">4,509 predictions</span>
+    </div>
+    <h1>The scorecard</h1>
+    <p class="lede">Every football prediction site tells you what will happen.
+    This page keeps score of how often it was wrong.</p>
+  </header>
+
+  <div class="strip">
+    <div class="tile"><span class="lbl">Predictions</span>
+      <span class="tile-v">4,509</span>
+      <span class="tile-n">Across 12 seasons, none of them seen during training.</span></div>
+    <div class="tile"><span class="lbl">Top pick correct</span>
+      <span class="tile-v mdl">53.9%</span>
+      <span class="tile-n">Bookmakers managed 55.7% on the same matches.</span></div>
+    <div class="tile"><span class="lbl">Brier score</span>
+      <span class="tile-v mdl">0.5792</span>
+      <span class="tile-n">Bookmakers 0.5633. Lower is better — they win.</span></div>
+    <div class="tile"><span class="lbl">Closer than the market</span>
+      <span class="tile-v">49%</span>
+      <span class="tile-n">Share of individual matches where we were nearer the truth.</span></div>
+  </div>
+
+  <section>
+    <div class="head">
+      <span class="lbl">01 — Do the percentages mean anything</span>
+      <h2>When it says 60%, does it happen 60% of the time?</h2>
+      <p class="note">Every probability the model ever quoted, pooled and bucketed.
+      A dot on the dashed line means that bucket was exactly right. Dot size is how
+      many predictions sit in it.</p>
+    </div>
+    <div class="two">
+      <div class="fig"><svg viewBox="0 0 460 460" role="img" aria-label="Predicted probability against observed frequency"><line class="grid" x1="52.0" y1="408.0" x2="52.0" y2="105.4"/><line class="grid" x1="52.0" y1="408.0" x2="354.6" y2="408.0"/><text class="tick" x="52.0" y="426.0" text-anchor="middle">0%</text><line class="grid" x1="123.2" y1="408.0" x2="123.2" y2="105.4"/><line class="grid" x1="52.0" y1="336.8" x2="354.6" y2="336.8"/><text class="tick" x="123.2" y="426.0" text-anchor="middle">20%</text><text class="tick" x="42.0" y="340.8" text-anchor="end">20%</text><line class="grid" x1="194.4" y1="408.0" x2="194.4" y2="105.4"/><line class="grid" x1="52.0" y1="265.6" x2="354.6" y2="265.6"/><text class="tick" x="194.4" y="426.0" text-anchor="middle">40%</text><text class="tick" x="42.0" y="269.6" text-anchor="end">40%</text><line class="grid" x1="265.6" y1="408.0" x2="265.6" y2="105.4"/><line class="grid" x1="52.0" y1="194.4" x2="354.6" y2="194.4"/><text class="tick" x="265.6" y="426.0" text-anchor="middle">60%</text><text class="tick" x="42.0" y="198.4" text-anchor="end">60%</text><line class="grid" x1="336.8" y1="408.0" x2="336.8" y2="105.4"/><line class="grid" x1="52.0" y1="123.2" x2="354.6" y2="123.2"/><text class="tick" x="336.8" y="426.0" text-anchor="middle">80%</text><text class="tick" x="42.0" y="127.2" text-anchor="end">80%</text><line class="ideal" x1="52.0" y1="408.0" x2="354.6" y2="105.4"/><text class="ideal-label" x="265.6" y="173.0" transform="rotate(-45 265.6 173.0)">perfect calibration</text><g class="pt"><title>Said 4% · happened 11% · 167 predictions</title><circle cx="65.6" cy="369.6" r="7.3"/></g><g class="pt"><title>Said 8% · happened 9% · 664 predictions</title><circle cx="79.9" cy="374.2" r="9.6"/></g><g class="pt"><title>Said 15% · happened 18% · 2,633 predictions</title><circle cx="106.7" cy="342.4" r="14.1"/></g><g class="pt"><title>Said 25% · happened 25% · 3,850 predictions</title><circle cx="141.4" cy="317.4" r="16.0"/></g><g class="pt"><title>Said 34% · happened 32% · 2,257 predictions</title><circle cx="174.0" cy="292.4" r="13.4"/></g><g class="pt"><title>Said 45% · happened 43% · 1,350 predictions</title><circle cx="211.5" cy="254.0" r="11.5"/></g><g class="pt"><title>Said 55% · happened 54% · 1,002 predictions</title><circle cx="247.1" cy="215.4" r="10.6"/></g><g class="pt"><title>Said 65% · happened 62% · 722 predictions</title><circle cx="281.9" cy="186.1" r="9.8"/></g><g class="pt"><title>Said 78% · happened 74% · 882 predictions</title><circle cx="328.7" cy="144.0" r="10.3"/></g><text class="axis" x="201.5" y="452" text-anchor="middle">what the model said</text><text class="axis" transform="rotate(-90 14 230)" x="14" y="230" text-anchor="middle">how often it happened</text></svg></div>
+      <div class="stack">
+        <p>This is the honest test. Being right often is easy if you only ever
+        predict the favourite. Being <em>calibrated</em> means the number itself
+        carries information — that a 30% is genuinely rarer than a 60%.</p>
+        <p>The dots track the line closely, with one consistent bias: at the
+        confident end the model says 78% and reality delivers
+        74% across 882 predictions. It is slightly too sure of
+        its favourites — which is exactly what the worst misses below look like.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="lbl">02 — Season by season</span>
+      <h2>Never better than the bookmakers for long</h2>
+      <p class="note">Share of matches where the top pick was correct. The model
+      leads in two seasons out of twelve.</p>
+    </div>
+    <div class="fig"><svg viewBox="0 0 720 300" role="img" aria-label="Hit rate by season"><line class="grid" x1="44" y1="246.0" x2="704" y2="246.0"/><text class="tick" x="36" y="250.0" text-anchor="end">40%</text><line class="grid" x1="44" y1="201.2" x2="704" y2="201.2"/><text class="tick" x="36" y="205.2" text-anchor="end">45%</text><line class="grid" x1="44" y1="156.4" x2="704" y2="156.4"/><text class="tick" x="36" y="160.4" text-anchor="end">50%</text><line class="grid" x1="44" y1="111.6" x2="704" y2="111.6"/><text class="tick" x="36" y="115.6" text-anchor="end">55%</text><line class="grid" x1="44" y1="66.8" x2="704" y2="66.8"/><text class="tick" x="36" y="70.8" text-anchor="end">60%</text><line class="grid" x1="44" y1="22.0" x2="704" y2="22.0"/><text class="tick" x="36" y="26.0" text-anchor="end">65%</text><polyline class="line mkt" points="44.0,64.9 104.0,123.4 164.0,179.0 224.0,57.4 284.0,108.5 344.0,78.6 404.0,128.1 464.0,142.3 524.0,81.5 584.0,100.5 644.0,79.2 704.0,123.1"/><polyline class="line mdl" points="44.0,72.0 104.0,151.7 164.0,205.1 224.0,90.4 284.0,98.9 344.0,92.7 404.0,135.2 464.0,165.8 524.0,107.7 584.0,136.2 644.0,74.4 704.0,130.8"/><text class="tick" x="44.0" y="270" text-anchor="middle">13/14</text><g class="pt mkt"><title>2013/14 · bookmakers 60.2% of 377 matches</title><circle cx="44.0" cy="64.9" r="4.5"/></g><g class="pt mdl"><title>2013/14 · model 59.4% of 377 matches</title><circle cx="44.0" cy="72.0" r="4.5"/></g><text class="tick" x="104.0" y="270" text-anchor="middle">14/15</text><g class="pt mkt"><title>2014/15 · bookmakers 53.7% of 380 matches</title><circle cx="104.0" cy="123.4" r="4.5"/></g><g class="pt mdl"><title>2014/15 · model 50.5% of 380 matches</title><circle cx="104.0" cy="151.7" r="4.5"/></g><text class="tick" x="164.0" y="270" text-anchor="middle">15/16</text><g class="pt mkt"><title>2015/16 · bookmakers 47.5% of 377 matches</title><circle cx="164.0" cy="179.0" r="4.5"/></g><g class="pt mdl"><title>2015/16 · model 44.6% of 377 matches</title><circle cx="164.0" cy="205.1" r="4.5"/></g><text class="tick" x="224.0" y="270" text-anchor="middle">16/17</text><g class="pt mkt"><title>2016/17 · bookmakers 61.1% of 380 matches</title><circle cx="224.0" cy="57.4" r="4.5"/></g><g class="pt mdl"><title>2016/17 · model 57.4% of 380 matches</title><circle cx="224.0" cy="90.4" r="4.5"/></g><text class="tick" x="284.0" y="270" text-anchor="middle">17/18</text><g class="pt mkt"><title>2017/18 · bookmakers 55.3% of 374 matches</title><circle cx="284.0" cy="108.5" r="4.5"/></g><g class="pt mdl"><title>2017/18 · model 56.4% of 374 matches</title><circle cx="284.0" cy="98.9" r="4.5"/></g><text class="tick" x="344.0" y="270" text-anchor="middle">18/19</text><g class="pt mkt"><title>2018/19 · bookmakers 58.7% of 380 matches</title><circle cx="344.0" cy="78.6" r="4.5"/></g><g class="pt mdl"><title>2018/19 · model 57.1% of 380 matches</title><circle cx="344.0" cy="92.7" r="4.5"/></g><text class="tick" x="404.0" y="270" text-anchor="middle">19/20</text><g class="pt mkt"><title>2019/20 · bookmakers 53.2% of 380 matches</title><circle cx="404.0" cy="128.1" r="4.5"/></g><g class="pt mdl"><title>2019/20 · model 52.4% of 380 matches</title><circle cx="404.0" cy="135.2" r="4.5"/></g><text class="tick" x="464.0" y="270" text-anchor="middle">20/21</text><g class="pt mkt"><title>2020/21 · bookmakers 51.6% of 380 matches</title><circle cx="464.0" cy="142.3" r="4.5"/></g><g class="pt mdl"><title>2020/21 · model 48.9% of 380 matches</title><circle cx="464.0" cy="165.8" r="4.5"/></g><text class="tick" x="524.0" y="270" text-anchor="middle">21/22</text><g class="pt mkt"><title>2021/22 · bookmakers 58.4% of 377 matches</title><circle cx="524.0" cy="81.5" r="4.5"/></g><g class="pt mdl"><title>2021/22 · model 55.4% of 377 matches</title><circle cx="524.0" cy="107.7" r="4.5"/></g><text class="tick" x="584.0" y="270" text-anchor="middle">22/23</text><g class="pt mkt"><title>2022/23 · bookmakers 56.2% of 377 matches</title><circle cx="584.0" cy="100.5" r="4.5"/></g><g class="pt mdl"><title>2022/23 · model 52.3% of 377 matches</title><circle cx="584.0" cy="136.2" r="4.5"/></g><text class="tick" x="644.0" y="270" text-anchor="middle">23/24</text><g class="pt mkt"><title>2023/24 · bookmakers 58.6% of 377 matches</title><circle cx="644.0" cy="79.2" r="4.5"/></g><g class="pt mdl"><title>2023/24 · model 59.2% of 377 matches</title><circle cx="644.0" cy="74.4" r="4.5"/></g><text class="tick" x="704.0" y="270" text-anchor="middle">24/25</text><g class="pt mkt"><title>2024/25 · bookmakers 53.7% of 350 matches</title><circle cx="704.0" cy="123.1" r="4.5"/></g><g class="pt mdl"><title>2024/25 · model 52.9% of 350 matches</title><circle cx="704.0" cy="130.8" r="4.5"/></g><text class="dlabel mdl" x="712.0" y="134.8">model</text><text class="dlabel mkt" x="712.0" y="115.1">bookmakers</text></svg></div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="lbl">03 — The failures</span>
+      <h2>The eight worst calls</h2>
+      <p class="note">Highest-confidence predictions that were wrong. Publishing
+      these is the point of the page.</p>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>Date</th><th>Home</th><th>Score</th><th>Away</th>
+      <th>We said</th><th>Actually</th></tr></thead>
+      <tbody><tr><td class='dt'>2014-05-04</td><td class='tm'>Chelsea</td><td class='sc'>0–0</td><td class='tm'>Norwich</td><td class='cl'>93% home win</td><td class='rs'>draw</td></tr><tr><td class='dt'>2015-02-21</td><td class='tm'>Chelsea</td><td class='sc'>1–1</td><td class='tm'>Burnley</td><td class='cl'>91% home win</td><td class='rs'>draw</td></tr><tr><td class='dt'>2017-01-31</td><td class='tm'>Arsenal</td><td class='sc'>1–2</td><td class='tm'>Watford</td><td class='cl'>91% home win</td><td class='rs'>away win</td></tr><tr><td class='dt'>2022-12-31</td><td class='tm'>Man City</td><td class='sc'>1–1</td><td class='tm'>Everton</td><td class='cl'>90% home win</td><td class='rs'>draw</td></tr><tr><td class='dt'>2019-10-06</td><td class='tm'>Man City</td><td class='sc'>0–2</td><td class='tm'>Wolves</td><td class='cl'>90% home win</td><td class='rs'>away win</td></tr><tr><td class='dt'>2014-01-29</td><td class='tm'>Chelsea</td><td class='sc'>0–0</td><td class='tm'>West Ham</td><td class='cl'>87% home win</td><td class='rs'>draw</td></tr><tr><td class='dt'>2014-02-09</td><td class='tm'>Man United</td><td class='sc'>2–2</td><td class='tm'>Fulham</td><td class='cl'>87% home win</td><td class='rs'>draw</td></tr><tr><td class='dt'>2021-01-21</td><td class='tm'>Liverpool</td><td class='sc'>0–1</td><td class='tm'>Burnley</td><td class='cl'>87% home win</td><td class='rs'>away win</td></tr></tbody>
+    </table></div>
+    <p class="note" style="margin-top:1rem">All eight are the same failure: a big
+    side not beating a smaller one at home — five draws and three defeats, each
+    priced at under 13%. That is the overconfidence in the chart above, made
+    concrete. The model has never learned that good teams have flat afternoons.</p>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="lbl">04 — The wins</span>
+      <h2>Where we most disagreed with the market, and were right</h2>
+      <p class="note">Correct calls, ranked by how much more probability the model
+      gave the true outcome than the bookmakers did.</p>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>Date</th><th>Home</th><th>Score</th><th>Away</th>
+      <th>Edge on truth</th><th>Result</th></tr></thead>
+      <tbody><tr><td class='dt'>2017-05-21</td><td class='tm'>Man United</td><td class='sc'>2–0</td><td class='tm'>Crystal Palace</td><td class='cl'>+40% vs market</td><td class='rs'>home win</td></tr><tr><td class='dt'>2022-11-12</td><td class='tm'>Bournemouth</td><td class='sc'>3–0</td><td class='tm'>Everton</td><td class='cl'>+35% vs market</td><td class='rs'>home win</td></tr><tr><td class='dt'>2020-07-26</td><td class='tm'>Arsenal</td><td class='sc'>3–2</td><td class='tm'>Watford</td><td class='cl'>+31% vs market</td><td class='rs'>home win</td></tr><tr><td class='dt'>2020-07-18</td><td class='tm'>Norwich</td><td class='sc'>0–2</td><td class='tm'>Burnley</td><td class='cl'>+31% vs market</td><td class='rs'>away win</td></tr><tr><td class='dt'>2020-07-22</td><td class='tm'>Liverpool</td><td class='sc'>5–3</td><td class='tm'>Chelsea</td><td class='cl'>+30% vs market</td><td class='rs'>home win</td></tr><tr><td class='dt'>2015-12-14</td><td class='tm'>Leicester</td><td class='sc'>2–1</td><td class='tm'>Chelsea</td><td class='cl'>+29% vs market</td><td class='rs'>home win</td></tr><tr><td class='dt'>2014-03-23</td><td class='tm'>Tottenham</td><td class='sc'>3–2</td><td class='tm'>Southampton</td><td class='cl'>+28% vs market</td><td class='rs'>home win</td></tr><tr><td class='dt'>2021-03-13</td><td class='tm'>Crystal Palace</td><td class='sc'>1–0</td><td class='tm'>West Brom</td><td class='cl'>+28% vs market</td><td class='rs'>home win</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <footer>
+    <p class="note">Predictions come from walk-forward evaluation: to forecast
+    season N the model is trained only on seasons before N, so no result here was
+    available to the model that produced it. Bookmaker probabilities have the
+    margin removed before comparison. Regenerate with
+    <code>python -m src.scorecard</code>.</p>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -94,7 +94,8 @@ class FeatureConfig:
     elo: EloConfig = field(default_factory=EloConfig)
     rolling: RollingConfig = field(default_factory=RollingConfig)
     #: Rest days are clipped to this ceiling so that summer breaks do not
-    #: dominate the fatigue signal.
+    #: dominate the signal. Note: the learned direction is the opposite of
+    #: fatigue — see the rest-day note in README.md.
     max_rest_days: int = 14
 
 

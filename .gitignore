@@ -61,3 +61,6 @@ venv/lib/python3.9/site-packages/xgboost/
 # Catch-all for any other venv files
 venv/lib/python3.9/site-packages/*
 venv/pyvenv.cfg
+
+# Generated workbook — rebuild with `python -m src.workbook`
+/reports/epl_decision_engine_results.xlsx
