@@ -2,6 +2,8 @@
 data/raw/*.csv
 data/processed/*
 !data/.gitkeep
+!app/cache/*.parquet
+app/cache/*.db
 
 # Python
 __pycache__/
