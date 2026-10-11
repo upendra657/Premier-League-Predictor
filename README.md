@@ -2,7 +2,7 @@
 
 *A 25-season quantitative study in sports machine learning, temporal feature engineering, and probabilistic model calibration.*
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://premier-league-decision-engine.streamlit.app/)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://premier-league-predictor-engine.streamlit.app/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Tests Passing](https://img.shields.io/badge/tests-42%20passing-success.svg)](tests/)
@@ -11,7 +11,7 @@
 ---
 
 ### Project Entry Points
-- 🚀 **[Interactive Streamlit Platform →](https://premier-league-decision-engine.streamlit.app/)** — Explore live model benchmarks, 10-decile reliability curves, team rating dossiers, and counterfactual matchup simulations.
+- 🚀 **[Interactive Streamlit Platform →](https://premier-league-predictor-engine.streamlit.app/)** — Explore live model benchmarks, 10-decile reliability curves, team rating dossiers, and counterfactual matchup simulations.
 - 📋 **[The Scorecard →](https://upendra657.github.io/Premier-League-Predictor/scorecard.html)** — Inspect all 4,509 out-of-sample predictions across 12 seasons and where the model was right or wrong.
 - 📖 **[System Walkthrough (`WHAT_THIS_PROJECT_IS.md`) →](WHAT_THIS_PROJECT_IS.md)** — A plain-English 10-minute guide through the system architecture, mathematical formulations, and results.
 - 🌐 **[Static Results Dashboard →](https://upendra657.github.io/Premier-League-Predictor/)** — Standalone SVG-driven summary page.
