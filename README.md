@@ -18,7 +18,7 @@
 
 ---
 
-## Executive Summary & At A Glance
+## Summary
 
 | Domain Property | Implementation & Engineering Detail |
 |---|---|
